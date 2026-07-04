@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client';
 
 import React, { useState, useCallback, useEffect } from 'react';
@@ -460,7 +459,7 @@ export default function Dashboard() {
                               <RechartsTooltip 
                                 cursor={{fill: '#f1f5f9'}} 
                                 contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
-                                formatter={(value: number, name: string, props: any) => [
+                                formatter={(value: any, name: any, props: any) => [
                                   `${value} ชั่วโมง (เข้า: ${props.payload.timeIn} - ออก: ${props.payload.timeOut})`, 
                                   'เวลาทำงาน'
                                 ]}
