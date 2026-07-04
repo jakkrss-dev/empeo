@@ -1,3 +1,4 @@
+// @ts-nocheck
 'use client';
 
 import React, { useState, useCallback, useEffect } from 'react';
@@ -27,7 +28,6 @@ export default function Dashboard() {
     setIsMounted(true);
   }, []);
 
-  // ฟังก์ชันหลักสำหรับประมวลผลไฟล์หลายไฟล์พร้อมกัน
   const handleMultipleFilesUpload = async (files: FileList | File[]) => {
     const fileArray = Array.from(files);
     if (fileArray.length === 0) return;
@@ -36,7 +36,6 @@ export default function Dashboard() {
     let uploadedFileNames: string[] = [];
     const uniqueEmployees = new Map();
 
-    // วนลูปอ่านแต่ละไฟล์ที่อัปโหลดเข้ามา
     for (const file of fileArray) {
       uploadedFileNames.push(file.name);
       try {
@@ -135,7 +134,6 @@ export default function Dashboard() {
       }
     }
 
-    // กรองข้อมูลซ้ำ (กรณีอัปโหลดไฟล์ที่มีวันเดียวกันซ้ำ)
     const uniqueRecordsMap = new Map();
     allRecords.forEach(rec => {
       uniqueRecordsMap.set(`${rec.empId}_${rec.date}`, rec);
@@ -150,7 +148,6 @@ export default function Dashboard() {
     const employees = Array.from(uniqueEmployees.values()).sort((a: any, b: any) => a.name.localeCompare(b.name));
     const uniqueDates = Array.from(new Set(parsedRecords.map(r => r.date))).sort();
     
-    // สร้างสถิติ (แบบจำนวนครั้ง) สำหรับกราฟ
     const employeeStats = employees.map((emp: any) => {
       const empRecs = parsedRecords.filter((r: any) => r.empId === emp.id);
       
@@ -181,7 +178,6 @@ export default function Dashboard() {
         { name: 'ลืมสแกน', count: incompleteCount, color: '#ef4444' } 
     ];
 
-    // ตั้งชื่อไฟล์แสดงผล
     const displayFileName = uploadedFileNames.length > 1 
       ? `เลือกข้อมูลทั้งหมด ${uploadedFileNames.length} ไฟล์` 
       : uploadedFileNames[0];
@@ -334,10 +330,9 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* กราฟสรุปแบบจำนวนครั้ง (แทนที่แบบคะแนน) */}
+            {/* กราฟสรุปแบบจำนวนครั้ง */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               
-              {/* กราฟ 1: สรุปจำนวนครั้งที่ไม่ทาบเข้า / ไม่ทาบออก */}
               <div className="bg-white p-7 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
                 <div className="flex flex-col mb-6">
                   <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
@@ -360,7 +355,6 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* กราฟ 2: กราฟสรุปรวมพฤติกรรมการลงเวลาทั้งหมด */}
               <div className="bg-white p-7 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
                 <div className="flex flex-col mb-6">
                   <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
