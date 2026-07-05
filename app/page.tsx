@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client';
 
 import React, { useState, useCallback, useEffect } from 'react';
@@ -99,11 +98,8 @@ export default function Dashboard() {
                 let isLate = false;
                 if (tInStr && tInStr !== '-') {
                     let formattedIn = tInStr;
-                    // เติม 0 ด้านหน้าถ้าเวลาเป็นรูปแบบ H:mm (เช่น 8:30 -> 08:30)
                     if (formattedIn.length === 4) formattedIn = '0' + formattedIn; 
-                    
-                    // ปรับเวลาเข้างานสายเป็น 08:30
-                    if (formattedIn > '08:30') {
+                    if (formattedIn > '09:00') {
                         isLate = true;
                     }
                 }
@@ -573,7 +569,7 @@ export default function Dashboard() {
                     >
                       <option value="all">ทุกสถานะ</option>
                       <option value="complete">สมบูรณ์ (ปกติ)</option>
-                      <option value="late">มาสาย (&gt;08:30)</option>
+                      <option value="late">มาสาย (&gt;09:00)</option>
                       <option value="incomplete">ลืมสแกน</option>
                     </select>
                   </div>
@@ -639,5 +635,5 @@ export default function Dashboard() {
         )}
       </div>
     </div>
-  
+  );
 }
