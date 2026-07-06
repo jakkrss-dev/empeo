@@ -4,12 +4,10 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, 
-  PieChart, Pie, Cell 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer 
 } from 'recharts';
 import { 
-  UploadCloud, FileSpreadsheet, Users, Activity, RefreshCw, 
-  Clock, AlertCircle, Briefcase, CalendarCheck, UserCheck, Calendar, UserX,
+  Users, RefreshCw, Clock, AlertCircle, Briefcase, CalendarCheck, UserCheck, Calendar, UserX,
   Search, Filter, CalendarDays, TrendingDown, Layers
 } from 'lucide-react';
 
@@ -113,23 +111,27 @@ export default function Dashboard() {
                 if (tInStr && tInStr !== '-') {
                     let formattedIn = tInStr;
                     if (formattedIn.length === 4) formattedIn = '0' + formattedIn; 
-                    
-                    if (formattedIn > '08:30') {
-                        isLate = true;
-                    }
+                    if (formattedIn > '08:30') isLate = true;
                 }
                 
                 let workHours = 0;
+                let diffMins = 0;
+                let workHoursText = '-';
+
                 if (!isIncomplete && tInStr.includes(':') && tOutStr.includes(':')) {
                     const [inH, inM] = tInStr.split(':').map(Number);
                     const [outH, outM] = tOutStr.split(':').map(Number);
                     let diff = (outH * 60 + outM) - (inH * 60 + inM);
                     if (diff < 0) diff += 24 * 60; 
                     
-                    // หักเวลาพักเที่ยง 60 นาที (ถ้าทำงานมากกว่า 1 ชั่วโมง)
+                    // หักเวลาพักเที่ยง 60 นาที 
                     diff = diff > 60 ? diff - 60 : 0;
+                    diffMins = diff;
                     
-                    workHours = parseFloat((diff / 60).toFixed(2));
+                    const h = Math.floor(diff / 60);
+                    const m = diff % 60;
+                    workHoursText = `${h} ชม. ${m} นาที`; // แปลงเป็นข้อความอ่านง่าย
+                    workHours = parseFloat((diff / 60).toFixed(2)); // ตัวเลขทศนิยมสำหรับวาดกราฟ
                 }
 
                 allRecords.push({
@@ -143,7 +145,9 @@ export default function Dashboard() {
                     isMissedIn: isMissedIn,
                     isMissedOut: isMissedOut,
                     isLate: isLate,
-                    workHours: workHours
+                    diffMins: diffMins,
+                    workHours: workHours,
+                    workHoursText: workHoursText
                 });
             }
         }
@@ -171,7 +175,11 @@ export default function Dashboard() {
       
       const missedInCount = empRecs.filter((r: any) => r.isMissedIn).length;
       const missedOutCount = empRecs.filter((r: any) => r.isMissedOut).length;
-      const totalWorkHours = empRecs.reduce((sum: number, r: any) => sum + (r.workHours || 0), 0);
+      
+      // คำนวณชั่วโมงรวมจากหน่วย "นาที" เพื่อความแม่นยำ
+      const totalMins = empRecs.reduce((sum: number, r: any) => sum + (r.diffMins || 0), 0);
+      const totalH = Math.floor(totalMins / 60);
+      const totalM = totalMins % 60;
       
       return {
         ...emp,
@@ -181,7 +189,8 @@ export default function Dashboard() {
         late: empRecs.filter((r: any) => r.isLate).length,
         missedInCount,
         missedOutCount,
-        totalWorkHours: parseFloat(totalWorkHours.toFixed(2))
+        totalWorkHoursText: `${totalH} ชม. ${totalM} นาที`, // ข้อความแสดงผล
+        totalWorkHours: parseFloat((totalMins / 60).toFixed(2)) // ตัวเลขวาดกราฟ
       };
     }).sort((a, b) => (b.late + b.incomplete) - (a.late + a.incomplete));
 
@@ -434,7 +443,7 @@ export default function Dashboard() {
                 <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                   <Clock className="w-5 h-5 text-indigo-500" /> กราฟสรุปชั่วโมงทำงานรวมของพนักงานแต่ละคน
                 </h3>
-                <p className="text-xs text-slate-400 mt-1">* แสดงเวลาทำงานสะสมทั้งหมด (หน่วยเป็นชั่วโมง หักลบเวลาพักเที่ยงแล้ว) ตลอดช่วงเวลาที่อัปโหลดไฟล์</p>
+                <p className="text-xs text-slate-400 mt-1">* แสดงเวลาทำงานสะสมทั้งหมด (หักลบเวลาพักเที่ยงแล้ว) ตลอดช่วงเวลาที่อัปโหลดไฟล์</p>
               </div>
               <div className="h-96 w-full">
                 <ResponsiveContainer width="100%" height="100%">
@@ -446,10 +455,13 @@ export default function Dashboard() {
                     <RechartsTooltip 
                       cursor={{fill: '#f8fafc'}} 
                       contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}} 
-                      formatter={(value: any) => [`${value} ชม.`, 'ชั่วโมงทำงานรวม']}
+                      formatter={(value: any, name: any, props: any) => [
+                        props.payload.totalWorkHoursText, // โชว์เป็นข้อความแทนตัวเลข
+                        'ชั่วโมงทำงานรวม'
+                      ]}
                     />
                     <Legend verticalAlign="top" height={36} wrapperStyle={{ fontSize: '13px' }} />
-                    <Bar dataKey="totalWorkHours" name="ชั่วโมงทำงานรวม (ชม.)" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="totalWorkHours" name="ชั่วโมงทำงานรวม" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -528,7 +540,7 @@ export default function Dashboard() {
                               cursor={{fill: '#f1f5f9'}} 
                               contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
                               formatter={(value: any, name: any, props: any) => [
-                                `${value} ชั่วโมง (เข้า: ${props.payload.timeIn} - ออก: ${props.payload.timeOut})`, 
+                                `${props.payload.workHoursText} (เข้า: ${props.payload.timeIn} - ออก: ${props.payload.timeOut})`, 
                                 'เวลาทำงานจริง'
                               ]}
                               labelFormatter={(label) => `วันที่: ${label}`}
@@ -577,7 +589,8 @@ export default function Dashboard() {
                         </td>
                         <td className="px-6 py-3 text-slate-600">{emp.dept}</td>
                         <td className="px-6 py-3 text-center">{emp.totalDays}</td>
-                        <td className="px-6 py-3 text-center font-semibold text-indigo-600">{emp.totalWorkHours} ชม.</td>
+                        {/* เปลี่ยนตรงนี้ให้โชว์เป็นคำอ่านง่ายๆ */}
+                        <td className="px-6 py-3 text-center font-semibold text-indigo-600">{emp.totalWorkHoursText}</td>
                         <td className="px-6 py-3 text-center">
                           {emp.late > 0 ? (
                             <span className="text-orange-600 font-bold bg-orange-50 px-2 py-1 rounded">{emp.late}</span>
@@ -669,8 +682,9 @@ export default function Dashboard() {
                         <td className="px-6 py-4 text-slate-600">{row.dept}</td>
                         <td className="px-6 py-4 text-center font-bold text-slate-700">{row.timeIn}</td>
                         <td className="px-6 py-4 text-center font-bold text-slate-700">{row.timeOut}</td>
+                        {/* เปลี่ยนตรงนี้ให้โชว์เป็นคำอ่านง่ายๆ */}
                         <td className="px-6 py-4 text-center font-bold text-indigo-600">
-                          {row.workHours > 0 ? `${row.workHours} ชม.` : '-'}
+                          {row.workHours > 0 ? row.workHoursText : '-'}
                         </td>
                         <td className="px-6 py-4 text-center">
                           {row.isIncomplete ? (
