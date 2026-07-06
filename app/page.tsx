@@ -24,8 +24,22 @@ export default function Dashboard() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [selectedDate, setSelectedDate] = useState<string>('all');
 
+  // โหลดข้อมูลเก่าจาก localStorage เมื่อเปิดเว็บครั้งแรก
   useEffect(() => {
     setIsMounted(true);
+    const savedData = localStorage.getItem('empeoDashboardData');
+    const savedFileName = localStorage.getItem('empeoFileName');
+    
+    if (savedData && savedFileName) {
+      try {
+        setDashboardData(JSON.parse(savedData));
+        setFileName(savedFileName);
+      } catch (error) {
+        console.error("ไม่สามารถโหลดข้อมูลที่บันทึกไว้ได้", error);
+        localStorage.removeItem('empeoDashboardData');
+        localStorage.removeItem('empeoFileName');
+      }
+    }
   }, []);
 
   const handleMultipleFilesUpload = async (files: FileList | File[]) => {
@@ -185,7 +199,7 @@ export default function Dashboard() {
       ? `เลือกข้อมูลทั้งหมด ${uploadedFileNames.length} ไฟล์` 
       : uploadedFileNames[0];
 
-    setDashboardData({
+    const newData = {
         totalRecords: parsedRecords.length,
         totalEmployees: employees.length,
         totalDepts: Object.keys(deptCount).length,
@@ -196,13 +210,31 @@ export default function Dashboard() {
         employees: employees,
         uniqueDates: uniqueDates,
         employeeStats: employeeStats
-    });
+    };
+
+    setDashboardData(newData);
     setFileName(displayFileName);
+
+    // บันทึกข้อมูลลงใน LocalStorage
+    try {
+      localStorage.setItem('empeoDashboardData', JSON.stringify(newData));
+      localStorage.setItem('empeoFileName', displayFileName);
+    } catch (error) {
+      console.warn("ขนาดไฟล์อาจใหญ่เกินกว่าจะบันทึกแบบถาวรในเบราว์เซอร์ได้ แต่ยังคงแสดงผลได้ปกติครับ", error);
+    }
     
     setSelectedEmpId(''); 
     setSearchTerm('');
     setFilterStatus('all');
     setSelectedDate('all');
+  };
+
+  const clearData = () => {
+    // ล้างข้อมูลหน้าจอและใน LocalStorage เมื่อกดอัปโหลดไฟล์ใหม่
+    setDashboardData(null);
+    setFileName(null);
+    localStorage.removeItem('empeoDashboardData');
+    localStorage.removeItem('empeoFileName');
   };
 
   const onDrop = useCallback((e: React.DragEvent) => {
@@ -252,7 +284,7 @@ export default function Dashboard() {
           
           {dashboardData && (
             <button 
-              onClick={() => setDashboardData(null)}
+              onClick={clearData}
               className="flex items-center gap-2 text-sm bg-white hover:bg-slate-50 text-slate-700 px-5 py-2.5 rounded-full font-medium transition-all shadow-sm border border-slate-200 hover:shadow"
             >
               <RefreshCw className="w-4 h-4" /> อัปโหลดไฟล์ใหม่
@@ -291,7 +323,7 @@ export default function Dashboard() {
             {/* File Info */}
             <div className="flex items-center gap-3 text-sm text-slate-600 bg-blue-50 border border-blue-100 py-3 px-5 rounded-xl">
               <Layers className="text-blue-500 w-5 h-5" />
-              <span>ดึงข้อมูลสำเร็จ: <strong className="text-slate-900">{fileName}</strong></span>
+              <span>ดึงข้อมูลล่าสุด: <strong className="text-slate-900">{fileName}</strong></span>
             </div>
 
             {/* KPI Cards */}
