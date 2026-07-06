@@ -125,6 +125,10 @@ export default function Dashboard() {
                     const [outH, outM] = tOutStr.split(':').map(Number);
                     let diff = (outH * 60 + outM) - (inH * 60 + inM);
                     if (diff < 0) diff += 24 * 60; 
+                    
+                    // หักเวลาพักเที่ยง 60 นาที (ถ้าทำงานมากกว่า 1 ชั่วโมง)
+                    diff = diff > 60 ? diff - 60 : 0;
+                    
                     workHours = parseFloat((diff / 60).toFixed(2));
                 }
 
@@ -262,10 +266,6 @@ export default function Dashboard() {
     });
   };
 
-  // ==========================================
-  // เตรียมข้อมูลสำหรับ เจาะลึกข้อมูลการลงเวลารายบุคคล 
-  // (คำนวณแยกไว้ตรงนี้เพื่อป้องกัน Error หน้าจอขาว)
-  // ==========================================
   let empTotalDays = 0, empComplete = 0, empLateCount = 0, empIncomplete = 0;
   let empChartData: any[] = [];
   
@@ -434,7 +434,7 @@ export default function Dashboard() {
                 <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                   <Clock className="w-5 h-5 text-indigo-500" /> กราฟสรุปชั่วโมงทำงานรวมของพนักงานแต่ละคน
                 </h3>
-                <p className="text-xs text-slate-400 mt-1">* แสดงเวลาทำงานสะสมทั้งหมด (หน่วยเป็นชั่วโมง) ตลอดช่วงเวลาที่อัปโหลดไฟล์</p>
+                <p className="text-xs text-slate-400 mt-1">* แสดงเวลาทำงานสะสมทั้งหมด (หน่วยเป็นชั่วโมง หักลบเวลาพักเที่ยงแล้ว) ตลอดช่วงเวลาที่อัปโหลดไฟล์</p>
               </div>
               <div className="h-96 w-full">
                 <ResponsiveContainer width="100%" height="100%">
@@ -516,7 +516,7 @@ export default function Dashboard() {
                   {empChartData.length > 0 && (
                     <div className="mt-8 mb-6 border border-slate-100 rounded-xl p-6 bg-slate-50/50">
                       <h4 className="text-md font-bold text-slate-700 mb-6 flex items-center gap-2">
-                        <Clock className="w-5 h-5 text-indigo-500" /> สถิติชั่วโมงการทำงานรายวัน
+                        <Clock className="w-5 h-5 text-indigo-500" /> สถิติชั่วโมงการทำงานรายวัน (หักพักเที่ยงแล้ว)
                       </h4>
                       <div className="h-64 w-full">
                         <ResponsiveContainer width="100%" height="100%">
@@ -529,7 +529,7 @@ export default function Dashboard() {
                               contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
                               formatter={(value: any, name: any, props: any) => [
                                 `${value} ชั่วโมง (เข้า: ${props.payload.timeIn} - ออก: ${props.payload.timeOut})`, 
-                                'เวลาทำงาน'
+                                'เวลาทำงานจริง'
                               ]}
                               labelFormatter={(label) => `วันที่: ${label}`}
                             />
