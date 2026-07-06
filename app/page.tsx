@@ -78,11 +78,15 @@ export default function Dashboard() {
             if (!row || !Array.isArray(row)) continue;
             
             const idCol = row[colIdx.id];
+            
+            // --- แก้ไขส่วนการดึงชื่อแผนกตรงนี้ ---
             if (idCol === 'ฝ่าย') {
-                const rawDept = String(row[colIdx.id + 2] || '');
-                currentDept = rawDept.replace(/^\d+\s+/, '').trim();
+                // ดึงข้อมูลในช่องถัดไปมาใช้แบบดิบๆ เลย (ตามไฟล์ Empeo)
+                const rawDept = String(row[colIdx.id + 2] || '').trim();
+                currentDept = rawDept || 'ไม่ระบุ';
                 continue;
             }
+            
             if (idCol && idCol !== 'รหัส' && idCol !== 'ฝ่าย' && row[colIdx.name]) {
                 currentEmpId = String(idCol).trim();
                 currentEmpName = String(row[colIdx.name]).trim();
@@ -124,14 +128,12 @@ export default function Dashboard() {
                     let diff = (outH * 60 + outM) - (inH * 60 + inM);
                     if (diff < 0) diff += 24 * 60; 
                     
-                    // หักเวลาพักเที่ยง 60 นาที 
                     diff = diff > 60 ? diff - 60 : 0;
                     diffMins = diff;
                     
                     const h = Math.floor(diff / 60);
                     const m = diff % 60;
                     
-                    // แปลงข้อความเป็นรูปแบบที่อ่านง่ายขึ้น
                     if (h > 0 && m > 0) {
                         workHoursText = `${h} ชั่วโมง ${m} นาที`;
                     } else if (h > 0) {
@@ -140,13 +142,13 @@ export default function Dashboard() {
                         workHoursText = `${m} นาที`;
                     }
 
-                    workHours = parseFloat((diff / 60).toFixed(2)); // ตัวเลขทศนิยมสำหรับกราฟ
+                    workHours = parseFloat((diff / 60).toFixed(2));
                 }
 
                 allRecords.push({
                     empId: currentEmpId,
                     empName: currentEmpName,
-                    dept: currentDept,
+                    dept: currentDept, // ใช้ข้อมูลที่เพิ่งแก้
                     date: dateCol,
                     timeIn: tInStr || '-',
                     timeOut: tOutStr || '-',
@@ -185,7 +187,6 @@ export default function Dashboard() {
       const missedInCount = empRecs.filter((r: any) => r.isMissedIn).length;
       const missedOutCount = empRecs.filter((r: any) => r.isMissedOut).length;
       
-      // คำนวณชั่วโมงรวมจากหน่วย "นาที" เพื่อความแม่นยำ
       const totalMins = empRecs.reduce((sum: number, r: any) => sum + (r.diffMins || 0), 0);
       const totalH = Math.floor(totalMins / 60);
       const totalM = totalMins % 60;
