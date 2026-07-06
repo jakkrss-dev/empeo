@@ -24,7 +24,6 @@ export default function Dashboard() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [selectedDate, setSelectedDate] = useState<string>('all');
 
-  // โหลดข้อมูลเก่าจาก localStorage เมื่อเปิดเว็บครั้งแรก
   useEffect(() => {
     setIsMounted(true);
     const savedData = localStorage.getItem('empeoDashboardData');
@@ -168,8 +167,6 @@ export default function Dashboard() {
       
       const missedInCount = empRecs.filter((r: any) => r.isMissedIn).length;
       const missedOutCount = empRecs.filter((r: any) => r.isMissedOut).length;
-      
-      // คำนวณชั่วโมงทำงานรวมทั้งหมดของพนักงานคนนี้
       const totalWorkHours = empRecs.reduce((sum: number, r: any) => sum + (r.workHours || 0), 0);
       
       return {
@@ -180,7 +177,7 @@ export default function Dashboard() {
         late: empRecs.filter((r: any) => r.isLate).length,
         missedInCount,
         missedOutCount,
-        totalWorkHours: parseFloat(totalWorkHours.toFixed(2)) // เพิ่มชั่วโมงทำงานรวมเข้าไป
+        totalWorkHours: parseFloat(totalWorkHours.toFixed(2))
       };
     }).sort((a, b) => (b.late + b.incomplete) - (a.late + a.incomplete));
 
@@ -264,6 +261,24 @@ export default function Dashboard() {
       return matchSearch && matchDate && matchStatus;
     });
   };
+
+  // ==========================================
+  // เตรียมข้อมูลสำหรับ เจาะลึกข้อมูลการลงเวลารายบุคคล 
+  // (คำนวณแยกไว้ตรงนี้เพื่อป้องกัน Error หน้าจอขาว)
+  // ==========================================
+  let empTotalDays = 0, empComplete = 0, empLateCount = 0, empIncomplete = 0;
+  let empChartData: any[] = [];
+  
+  if (dashboardData && selectedEmpId) {
+    const empRecords = dashboardData.records.filter((r: any) => String(r.empId) === String(selectedEmpId));
+    empTotalDays = empRecords.length;
+    empIncomplete = empRecords.filter((r: any) => r.isIncomplete).length;
+    empLateCount = empRecords.filter((r: any) => r.isLate).length;
+    empComplete = empTotalDays - empIncomplete;
+    empChartData = empRecords
+      .filter((r: any) => r.workHours > 0)
+      .sort((a: any, b: any) => String(a.date).localeCompare(String(b.date)));
+  }
 
   if (!isMounted) return null;
 
@@ -423,7 +438,8 @@ export default function Dashboard() {
               </div>
               <div className="h-96 w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={dashboardData.employeeStats.sort((a:any, b:any) => b.totalWorkHours - a.totalWorkHours)} margin={{ top: 10, right: 10, left: -20, bottom: 40 }}>
+                  {/* @ts-ignore */}
+                  <BarChart data={[...dashboardData.employeeStats].sort((a:any, b:any) => b.totalWorkHours - a.totalWorkHours)} margin={{ top: 10, right: 10, left: -20, bottom: 40 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                     <XAxis dataKey="shortName" tick={{fontSize: 12, fill: '#64748b'}} tickLine={false} axisLine={false} angle={-35} textAnchor="end" />
                     <YAxis tick={{fontSize: 12, fill: '#64748b'}} tickLine={false} axisLine={false} />
@@ -461,79 +477,70 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {selectedEmpId ? (() => {
-                const empRecords = dashboardData.records.filter((r: any) => r.empId === selectedEmpId);
-                const totalDays = empRecords.length;
-                const incomplete = empRecords.filter((r: any) => r.isIncomplete).length;
-                const lateCount = empRecords.filter((r: any) => r.isLate).length;
-                const complete = totalDays - incomplete;
-                const chartData = empRecords.filter((r: any) => r.workHours > 0).sort((a: any, b: any) => a.date.localeCompare(b.date));
-
-                return (
-                  <div className="animate-in fade-in zoom-in-95 duration-300">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-6">
-                      <div className="bg-slate-50 rounded-xl p-5 border border-slate-100 flex items-center gap-4">
-                        <div className="bg-blue-100 p-3 rounded-full text-blue-600"><Calendar className="w-6 h-6" /></div>
-                        <div>
-                          <p className="text-sm font-semibold text-slate-500">วันทำงานทั้งหมด</p>
-                          <p className="text-2xl font-bold text-slate-800">{totalDays} <span className="text-sm font-medium text-slate-500">วัน</span></p>
-                        </div>
-                      </div>
-
-                      <div className="bg-slate-50 rounded-xl p-5 border border-slate-100 flex items-center gap-4">
-                        <div className="bg-emerald-100 p-3 rounded-full text-emerald-600"><UserCheck className="w-6 h-6" /></div>
-                        <div>
-                          <p className="text-sm font-semibold text-slate-500">ลงเวลาครบถ้วน</p>
-                          <p className="text-2xl font-bold text-emerald-600">{complete} <span className="text-sm font-medium text-slate-500">วัน</span></p>
-                        </div>
-                      </div>
-
-                      <div className="bg-slate-50 rounded-xl p-5 border border-slate-100 flex items-center gap-4">
-                        <div className="bg-orange-100 p-3 rounded-full text-orange-600"><TrendingDown className="w-6 h-6" /></div>
-                        <div>
-                          <p className="text-sm font-semibold text-slate-500">มาสาย</p>
-                          <p className="text-2xl font-bold text-orange-600">{lateCount} <span className="text-sm font-medium text-slate-500">ครั้ง</span></p>
-                        </div>
-                      </div>
-
-                      <div className="bg-slate-50 rounded-xl p-5 border border-slate-100 flex items-center gap-4">
-                        <div className="bg-red-100 p-3 rounded-full text-red-600"><UserX className="w-6 h-6" /></div>
-                        <div>
-                          <p className="text-sm font-semibold text-slate-500">ลืมสแกน (เข้า/ออก)</p>
-                          <p className="text-2xl font-bold text-red-600">{incomplete} <span className="text-sm font-medium text-slate-500">ครั้ง</span></p>
-                        </div>
+              {selectedEmpId ? (
+                <div className="animate-in fade-in zoom-in-95 duration-300">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-6">
+                    <div className="bg-slate-50 rounded-xl p-5 border border-slate-100 flex items-center gap-4">
+                      <div className="bg-blue-100 p-3 rounded-full text-blue-600"><Calendar className="w-6 h-6" /></div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-500">วันทำงานทั้งหมด</p>
+                        <p className="text-2xl font-bold text-slate-800">{empTotalDays} <span className="text-sm font-medium text-slate-500">วัน</span></p>
                       </div>
                     </div>
 
-                    {chartData.length > 0 && (
-                      <div className="mt-8 mb-6 border border-slate-100 rounded-xl p-6 bg-slate-50/50">
-                        <h4 className="text-md font-bold text-slate-700 mb-6 flex items-center gap-2">
-                          <Clock className="w-5 h-5 text-indigo-500" /> สถิติชั่วโมงการทำงานรายวัน
-                        </h4>
-                        <div className="h-64 w-full">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
-                              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                              <XAxis dataKey="date" tick={{fontSize: 12, fill: '#64748b'}} tickLine={false} axisLine={false} />
-                              <YAxis tick={{fontSize: 12, fill: '#64748b'}} tickLine={false} axisLine={false} />
-                              <RechartsTooltip 
-                                cursor={{fill: '#f1f5f9'}} 
-                                contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
-                                formatter={(value: any, name: any, props: any) => [
-                                  `${value} ชั่วโมง (เข้า: ${props.payload.timeIn} - ออก: ${props.payload.timeOut})`, 
-                                  'เวลาทำงาน'
-                                ]}
-                                labelFormatter={(label) => `วันที่: ${label}`}
-                              />
-                              <Bar dataKey="workHours" name="ชั่วโมงทำงาน" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={35} />
-                            </BarChart>
-                          </ResponsiveContainer>
-                        </div>
+                    <div className="bg-slate-50 rounded-xl p-5 border border-slate-100 flex items-center gap-4">
+                      <div className="bg-emerald-100 p-3 rounded-full text-emerald-600"><UserCheck className="w-6 h-6" /></div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-500">ลงเวลาครบถ้วน</p>
+                        <p className="text-2xl font-bold text-emerald-600">{empComplete} <span className="text-sm font-medium text-slate-500">วัน</span></p>
                       </div>
-                    )}
+                    </div>
+
+                    <div className="bg-slate-50 rounded-xl p-5 border border-slate-100 flex items-center gap-4">
+                      <div className="bg-orange-100 p-3 rounded-full text-orange-600"><TrendingDown className="w-6 h-6" /></div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-500">มาสาย</p>
+                        <p className="text-2xl font-bold text-orange-600">{empLateCount} <span className="text-sm font-medium text-slate-500">ครั้ง</span></p>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-50 rounded-xl p-5 border border-slate-100 flex items-center gap-4">
+                      <div className="bg-red-100 p-3 rounded-full text-red-600"><UserX className="w-6 h-6" /></div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-500">ลืมสแกน (เข้า/ออก)</p>
+                        <p className="text-2xl font-bold text-red-600">{empIncomplete} <span className="text-sm font-medium text-slate-500">ครั้ง</span></p>
+                      </div>
+                    </div>
                   </div>
-                );
-              })() : (
+
+                  {empChartData.length > 0 && (
+                    <div className="mt-8 mb-6 border border-slate-100 rounded-xl p-6 bg-slate-50/50">
+                      <h4 className="text-md font-bold text-slate-700 mb-6 flex items-center gap-2">
+                        <Clock className="w-5 h-5 text-indigo-500" /> สถิติชั่วโมงการทำงานรายวัน
+                      </h4>
+                      <div className="h-64 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={empChartData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                            <XAxis dataKey="date" tick={{fontSize: 12, fill: '#64748b'}} tickLine={false} axisLine={false} />
+                            <YAxis tick={{fontSize: 12, fill: '#64748b'}} tickLine={false} axisLine={false} />
+                            <RechartsTooltip 
+                              cursor={{fill: '#f1f5f9'}} 
+                              contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
+                              formatter={(value: any, name: any, props: any) => [
+                                `${value} ชั่วโมง (เข้า: ${props.payload.timeIn} - ออก: ${props.payload.timeOut})`, 
+                                'เวลาทำงาน'
+                              ]}
+                              labelFormatter={(label) => `วันที่: ${label}`}
+                            />
+                            <Bar dataKey="workHours" name="ชั่วโมงทำงาน" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={35} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
                 <div className="text-center py-10 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-slate-400">
                   <Users className="w-12 h-12 mx-auto mb-3 opacity-20" />
                   <p>กรุณาเลือกชื่อพนักงานจาก Dropdown ด้านบนเพื่อดูสรุปรายบุคคล</p>
