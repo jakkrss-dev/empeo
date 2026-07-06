@@ -130,8 +130,17 @@ export default function Dashboard() {
                     
                     const h = Math.floor(diff / 60);
                     const m = diff % 60;
-                    workHoursText = `${h} ชม. ${m} นาที`; // แปลงเป็นข้อความอ่านง่าย
-                    workHours = parseFloat((diff / 60).toFixed(2)); // ตัวเลขทศนิยมสำหรับวาดกราฟ
+                    
+                    // แปลงข้อความเป็นรูปแบบที่อ่านง่ายขึ้น
+                    if (h > 0 && m > 0) {
+                        workHoursText = `${h} ชั่วโมง ${m} นาที`;
+                    } else if (h > 0) {
+                        workHoursText = `${h} ชั่วโมง`;
+                    } else {
+                        workHoursText = `${m} นาที`;
+                    }
+
+                    workHours = parseFloat((diff / 60).toFixed(2)); // ตัวเลขทศนิยมสำหรับกราฟ
                 }
 
                 allRecords.push({
@@ -181,6 +190,15 @@ export default function Dashboard() {
       const totalH = Math.floor(totalMins / 60);
       const totalM = totalMins % 60;
       
+      let totalWorkHoursText = '';
+      if (totalH > 0 && totalM > 0) {
+          totalWorkHoursText = `${totalH} ชั่วโมง ${totalM} นาที`;
+      } else if (totalH > 0) {
+          totalWorkHoursText = `${totalH} ชั่วโมง`;
+      } else {
+          totalWorkHoursText = `${totalM} นาที`;
+      }
+      
       return {
         ...emp,
         shortName: emp.name.split(' ')[0],
@@ -189,8 +207,8 @@ export default function Dashboard() {
         late: empRecs.filter((r: any) => r.isLate).length,
         missedInCount,
         missedOutCount,
-        totalWorkHoursText: `${totalH} ชม. ${totalM} นาที`, // ข้อความแสดงผล
-        totalWorkHours: parseFloat((totalMins / 60).toFixed(2)) // ตัวเลขวาดกราฟ
+        totalWorkHoursText: totalWorkHoursText,
+        totalWorkHours: parseFloat((totalMins / 60).toFixed(2)) 
       };
     }).sort((a, b) => (b.late + b.incomplete) - (a.late + a.incomplete));
 
@@ -437,7 +455,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* กราฟใหม่: ชั่วโมงทำงานรวมทั้งหมดของทุกคน */}
+            {/* กราฟชั่วโมงทำงานรวมทั้งหมดของทุกคน */}
             <div className="bg-white p-7 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
               <div className="flex flex-col mb-6">
                 <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
@@ -456,7 +474,7 @@ export default function Dashboard() {
                       cursor={{fill: '#f8fafc'}} 
                       contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}} 
                       formatter={(value: any, name: any, props: any) => [
-                        props.payload.totalWorkHoursText, // โชว์เป็นข้อความแทนตัวเลข
+                        props.payload.totalWorkHoursText,
                         'ชั่วโมงทำงานรวม'
                       ]}
                     />
@@ -589,7 +607,6 @@ export default function Dashboard() {
                         </td>
                         <td className="px-6 py-3 text-slate-600">{emp.dept}</td>
                         <td className="px-6 py-3 text-center">{emp.totalDays}</td>
-                        {/* เปลี่ยนตรงนี้ให้โชว์เป็นคำอ่านง่ายๆ */}
                         <td className="px-6 py-3 text-center font-semibold text-indigo-600">{emp.totalWorkHoursText}</td>
                         <td className="px-6 py-3 text-center">
                           {emp.late > 0 ? (
@@ -682,7 +699,6 @@ export default function Dashboard() {
                         <td className="px-6 py-4 text-slate-600">{row.dept}</td>
                         <td className="px-6 py-4 text-center font-bold text-slate-700">{row.timeIn}</td>
                         <td className="px-6 py-4 text-center font-bold text-slate-700">{row.timeOut}</td>
-                        {/* เปลี่ยนตรงนี้ให้โชว์เป็นคำอ่านง่ายๆ */}
                         <td className="px-6 py-4 text-center font-bold text-indigo-600">
                           {row.workHours > 0 ? row.workHoursText : '-'}
                         </td>
