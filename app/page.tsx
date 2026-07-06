@@ -113,10 +113,8 @@ export default function Dashboard() {
                 let isLate = false;
                 if (tInStr && tInStr !== '-') {
                     let formattedIn = tInStr;
-                    // เติม 0 ด้านหน้าถ้าเวลาเป็นรูปแบบ H:mm (เช่น 8:30 -> 08:30)
                     if (formattedIn.length === 4) formattedIn = '0' + formattedIn; 
                     
-                    // ปรับเวลาเข้างานสายเป็น 08:30
                     if (formattedIn > '08:30') {
                         isLate = true;
                     }
@@ -171,6 +169,9 @@ export default function Dashboard() {
       const missedInCount = empRecs.filter((r: any) => r.isMissedIn).length;
       const missedOutCount = empRecs.filter((r: any) => r.isMissedOut).length;
       
+      // คำนวณชั่วโมงทำงานรวมทั้งหมดของพนักงานคนนี้
+      const totalWorkHours = empRecs.reduce((sum: number, r: any) => sum + (r.workHours || 0), 0);
+      
       return {
         ...emp,
         shortName: emp.name.split(' ')[0],
@@ -179,6 +180,7 @@ export default function Dashboard() {
         late: empRecs.filter((r: any) => r.isLate).length,
         missedInCount,
         missedOutCount,
+        totalWorkHours: parseFloat(totalWorkHours.toFixed(2)) // เพิ่มชั่วโมงทำงานรวมเข้าไป
       };
     }).sort((a, b) => (b.late + b.incomplete) - (a.late + a.incomplete));
 
@@ -215,7 +217,6 @@ export default function Dashboard() {
     setDashboardData(newData);
     setFileName(displayFileName);
 
-    // บันทึกข้อมูลลงใน LocalStorage
     try {
       localStorage.setItem('empeoDashboardData', JSON.stringify(newData));
       localStorage.setItem('empeoFileName', displayFileName);
@@ -230,7 +231,6 @@ export default function Dashboard() {
   };
 
   const clearData = () => {
-    // ล้างข้อมูลหน้าจอและใน LocalStorage เมื่อกดอัปโหลดไฟล์ใหม่
     setDashboardData(null);
     setFileName(null);
     localStorage.removeItem('empeoDashboardData');
@@ -367,7 +367,6 @@ export default function Dashboard() {
 
             {/* กราฟสรุปแบบจำนวนครั้ง */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              
               <div className="bg-white p-7 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
                 <div className="flex flex-col mb-6">
                   <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
@@ -412,7 +411,32 @@ export default function Dashboard() {
                   </ResponsiveContainer>
                 </div>
               </div>
+            </div>
 
+            {/* กราฟใหม่: ชั่วโมงทำงานรวมทั้งหมดของทุกคน */}
+            <div className="bg-white p-7 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+              <div className="flex flex-col mb-6">
+                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-indigo-500" /> กราฟสรุปชั่วโมงทำงานรวมของพนักงานแต่ละคน
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">* แสดงเวลาทำงานสะสมทั้งหมด (หน่วยเป็นชั่วโมง) ตลอดช่วงเวลาที่อัปโหลดไฟล์</p>
+              </div>
+              <div className="h-96 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={dashboardData.employeeStats.sort((a:any, b:any) => b.totalWorkHours - a.totalWorkHours)} margin={{ top: 10, right: 10, left: -20, bottom: 40 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis dataKey="shortName" tick={{fontSize: 12, fill: '#64748b'}} tickLine={false} axisLine={false} angle={-35} textAnchor="end" />
+                    <YAxis tick={{fontSize: 12, fill: '#64748b'}} tickLine={false} axisLine={false} />
+                    <RechartsTooltip 
+                      cursor={{fill: '#f8fafc'}} 
+                      contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}} 
+                      formatter={(value: any) => [`${value} ชม.`, 'ชั่วโมงทำงานรวม']}
+                    />
+                    <Legend verticalAlign="top" height={36} wrapperStyle={{ fontSize: '13px' }} />
+                    <Bar dataKey="totalWorkHours" name="ชั่วโมงทำงานรวม (ชม.)" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
 
             {/* Individual Employee Summary Section */}
@@ -533,6 +557,7 @@ export default function Dashboard() {
                       <th className="px-6 py-4">พนักงาน</th>
                       <th className="px-6 py-4">แผนก</th>
                       <th className="px-6 py-4 text-center">วันทำงานทั้งหมด</th>
+                      <th className="px-6 py-4 text-center">ชั่วโมงทำงานรวม</th>
                       <th className="px-6 py-4 text-center">มาสาย</th>
                       <th className="px-6 py-4 text-center">ลืมสแกนนิ้ว</th>
                     </tr>
@@ -545,6 +570,7 @@ export default function Dashboard() {
                         </td>
                         <td className="px-6 py-3 text-slate-600">{emp.dept}</td>
                         <td className="px-6 py-3 text-center">{emp.totalDays}</td>
+                        <td className="px-6 py-3 text-center font-semibold text-indigo-600">{emp.totalWorkHours} ชม.</td>
                         <td className="px-6 py-3 text-center">
                           {emp.late > 0 ? (
                             <span className="text-orange-600 font-bold bg-orange-50 px-2 py-1 rounded">{emp.late}</span>
