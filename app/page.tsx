@@ -393,6 +393,88 @@ export default function Dashboard() {
     }
   };
 
+  const parseDateToObj = (dStr: string) => {
+    if (!dStr) return null;
+    const parts = dStr.split('/');
+    if (parts.length === 3) {
+      const d = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10);
+      const y = parseInt(parts[2], 10);
+      return new Date(y, m - 1, d);
+    }
+    return null;
+  };
+
+  const displayData = useMemo(() => {
+    if (!dashboardData) return null;
+    if (!startDate && !endDate) return dashboardData;
+    
+    const startObj = startDate ? new Date(startDate) : new Date('2000-01-01');
+    startObj.setHours(0, 0, 0, 0);
+    const endObj = endDate ? new Date(endDate) : new Date('2100-01-01');
+    endObj.setHours(23, 59, 59, 999);
+    
+    const filteredRecords = (dashboardData.allRecords || dashboardData.records).filter((r: any) => {
+      const rd = parseDateToObj(r.date);
+      return rd && rd >= startObj && rd <= endObj;
+    });
+    
+    const deptCount: any = {};
+    const employees = dashboardData.employees;
+    
+    const employeeStats = employees.map((emp: any) => {
+      const empRecs = filteredRecords.filter((r: any) => r.empId === emp.id);
+      
+      const missedInCount = empRecs.filter((r: any) => r.isMissedIn).length;
+      const missedOutCount = empRecs.filter((r: any) => r.isMissedOut).length;
+      const totalMins = empRecs.reduce((sum: number, r: any) => sum + (r.diffMins || 0), 0);
+      const totalH = Math.floor(totalMins / 60);
+      const totalM = totalMins % 60;
+      
+      let totalWorkHoursText = '';
+      if (totalH > 0 && totalM > 0) totalWorkHoursText = `${totalH} ชั่วโมง ${totalM} นาที`;
+      else if (totalH > 0) totalWorkHoursText = `${totalH} ชั่วโมง`;
+      else totalWorkHoursText = `${totalM} นาที`;
+      
+      return {
+        ...emp,
+        shortName: emp.name.split(' ')[0],
+        totalDays: empRecs.length,
+        incomplete: empRecs.filter((r: any) => r.isIncomplete).length,
+        late: empRecs.filter((r: any) => r.isLate).length,
+        missedInCount,
+        missedOutCount,
+        totalWorkHoursText: totalWorkHoursText,
+        totalWorkHours: parseFloat((totalMins / 60).toFixed(2)) 
+      };
+    }).sort((a: any, b: any) => (b.late + b.incomplete) - (a.late + a.incomplete));
+
+    const activeEmployees = employeeStats.filter((emp: any) => emp.totalDays > 0);
+    activeEmployees.forEach((emp: any) => { deptCount[emp.dept] = (deptCount[emp.dept] || 0) + 1; });
+    const barChartData = Object.keys(deptCount).map(key => ({
+        name: key, count: deptCount[key]
+    })).sort((a: any, b: any) => b.count - a.count);
+
+    const incompleteCount = filteredRecords.filter((r: any) => r.isIncomplete).length;
+    const completeCount = filteredRecords.length - incompleteCount;
+    const pieChartData = [
+        { name: 'สแกนครบ', count: completeCount, color: '#10b981' }, 
+        { name: 'ลืมสแกน', count: incompleteCount, color: '#ef4444' } 
+    ];
+
+    return {
+      ...dashboardData,
+      records: filteredRecords,
+      totalRecords: filteredRecords.length,
+      totalEmployees: activeEmployees.length,
+      totalDepts: Object.keys(deptCount).length,
+      incompleteScans: incompleteCount,
+      employeeStats,
+      barChartData,
+      pieChartData
+    };
+  }, [dashboardData, startDate, endDate]);
+
   const getFilteredRecords = () => {
     if (!dashboardData) return [];
     return dashboardData.records.filter((row: any) => {
