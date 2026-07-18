@@ -18,7 +18,9 @@ export default function Dashboard() {
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   
-  const [selectedEmpId, setSelectedEmpId] = useState<string>('');
+    const [selectedEmpId, setSelectedEmpId] = useState<string>('');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [selectedDate, setSelectedDate] = useState<string>('all');
@@ -516,10 +518,33 @@ export default function Dashboard() {
           /* Dashboard Section */
           <div className="space-y-8 flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-700">
             
-            {/* File Info */}
-            <div className="flex items-center gap-3 text-sm text-slate-600 bg-blue-50 border border-blue-100 py-3 px-5 rounded-xl">
-              <Layers className="text-blue-500 w-5 h-5" />
-              <span>ดึงข้อมูลล่าสุด: <strong className="text-slate-900">{fileName}</strong></span>
+            {/* File Info & Date Filter */}
+            <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+              <div className="flex items-center gap-3 text-sm text-slate-600 bg-blue-50 border border-blue-100 py-2 px-4 rounded-lg w-full md:w-auto">
+                <Layers className="text-blue-500 w-5 h-5" />
+                <span>ดึงข้อมูลล่าสุด: <strong className="text-slate-900">{fileName}</strong></span>
+              </div>
+              
+              <div className="flex items-center gap-3 w-full md:w-auto">
+                <CalendarDays className="text-indigo-500 w-5 h-5" />
+                <span className="text-sm font-semibold text-slate-700 whitespace-nowrap">ช่วงวันที่:</span>
+                <input 
+                  type="date" 
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="text-sm border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 outline-none"
+                />
+                <span className="text-slate-400">-</span>
+                <input 
+                  type="date" 
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="text-sm border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 outline-none"
+                />
+                {(startDate || endDate) && (
+                  <button onClick={() => { setStartDate(''); setEndDate(''); }} className="text-xs text-red-500 hover:text-red-700 underline whitespace-nowrap">ล้างค่า</button>
+                )}
+              </div>
             </div>
 
             {/* KPI Cards */}
@@ -530,7 +555,7 @@ export default function Dashboard() {
                   <div className="bg-blue-100 p-2.5 rounded-lg text-blue-600"><Users className="w-5 h-5" /></div>
                   <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">พนักงานทั้งหมด</p>
                 </div>
-                <h4 className="text-4xl font-extrabold text-slate-800">{dashboardData.totalEmployees} <span className="text-lg font-medium text-slate-500">คน</span></h4>
+                <h4 className="text-4xl font-extrabold text-slate-800">{displayData.totalEmployees} <span className="text-lg font-medium text-slate-500">คน</span></h4>
               </div>
 
               <div className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-slate-100 p-6 flex flex-col relative overflow-hidden">
@@ -539,7 +564,7 @@ export default function Dashboard() {
                   <div className="bg-indigo-100 p-2.5 rounded-lg text-indigo-600"><Clock className="w-5 h-5" /></div>
                   <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">รายการบันทึกเวลา</p>
                 </div>
-                <h4 className="text-4xl font-extrabold text-slate-800">{dashboardData.totalRecords} <span className="text-lg font-medium text-slate-500">ครั้ง</span></h4>
+                <h4 className="text-4xl font-extrabold text-slate-800">{displayData.totalRecords} <span className="text-lg font-medium text-slate-500">ครั้ง</span></h4>
               </div>
 
               <div className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-slate-100 p-6 flex flex-col relative overflow-hidden">
@@ -548,7 +573,7 @@ export default function Dashboard() {
                   <div className="bg-red-100 p-2.5 rounded-lg text-red-600"><AlertCircle className="w-5 h-5" /></div>
                   <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">ลืมสแกนเข้า/ออก</p>
                 </div>
-                <h4 className="text-4xl font-extrabold text-red-600">{dashboardData.incompleteScans} <span className="text-lg font-medium text-slate-500">ครั้ง</span></h4>
+                <h4 className="text-4xl font-extrabold text-red-600">{displayData.incompleteScans} <span className="text-lg font-medium text-slate-500">ครั้ง</span></h4>
               </div>
 
               <div className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-slate-100 p-6 flex flex-col relative overflow-hidden">
@@ -557,7 +582,7 @@ export default function Dashboard() {
                   <div className="bg-emerald-100 p-2.5 rounded-lg text-emerald-600"><Briefcase className="w-5 h-5" /></div>
                   <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">จำนวนแผนก</p>
                 </div>
-                <h4 className="text-4xl font-extrabold text-slate-800">{dashboardData.totalDepts} <span className="text-lg font-medium text-slate-500">แผนก</span></h4>
+                <h4 className="text-4xl font-extrabold text-slate-800">{displayData.totalDepts} <span className="text-lg font-medium text-slate-500">แผนก</span></h4>
               </div>
             </div>
 
@@ -572,7 +597,7 @@ export default function Dashboard() {
                 </div>
                 <div className="h-80 w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={dashboardData.employeeStats} margin={{ top: 10, right: 10, left: -20, bottom: 40 }}>
+                    <BarChart data={displayData.employeeStats} margin={{ top: 10, right: 10, left: -20, bottom: 40 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                       <XAxis dataKey="shortName" tick={{fontSize: 12, fill: '#64748b'}} tickLine={false} axisLine={false} angle={-35} textAnchor="end" />
                       <YAxis tick={{fontSize: 12, fill: '#64748b'}} tickLine={false} axisLine={false} allowDecimals={false} />
@@ -594,7 +619,7 @@ export default function Dashboard() {
                 </div>
                 <div className="h-80 w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={dashboardData.employeeStats} margin={{ top: 10, right: 10, left: -20, bottom: 40 }}>
+                    <BarChart data={displayData.employeeStats} margin={{ top: 10, right: 10, left: -20, bottom: 40 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                       <XAxis dataKey="shortName" tick={{fontSize: 12, fill: '#64748b'}} tickLine={false} axisLine={false} angle={-35} textAnchor="end" />
                       <YAxis tick={{fontSize: 12, fill: '#64748b'}} tickLine={false} axisLine={false} allowDecimals={false} />
@@ -620,7 +645,7 @@ export default function Dashboard() {
               <div className="h-96 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   {/* @ts-ignore */}
-                  <BarChart data={[...dashboardData.employeeStats].sort((a:any, b:any) => b.totalWorkHours - a.totalWorkHours)} margin={{ top: 10, right: 10, left: -20, bottom: 40 }}>
+                  <BarChart data={[...displayData.employeeStats].sort((a:any, b:any) => b.totalWorkHours - a.totalWorkHours)} margin={{ top: 10, right: 10, left: -20, bottom: 40 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                     <XAxis dataKey="shortName" tick={{fontSize: 12, fill: '#64748b'}} tickLine={false} axisLine={false} angle={-35} textAnchor="end" />
                     <YAxis tick={{fontSize: 12, fill: '#64748b'}} tickLine={false} axisLine={false} />
@@ -654,7 +679,7 @@ export default function Dashboard() {
                     onChange={(e) => setSelectedEmpId(e.target.value)}
                   >
                     <option value="">-- เลือกพนักงานเพื่อดูสรุป --</option>
-                    {dashboardData.employees.map((emp: any) => (
+                    {displayData.employees.map((emp: any) => (
                       <option key={emp.id} value={emp.id}>{emp.name} ({emp.dept})</option>
                     ))}
                   </select>
@@ -754,7 +779,7 @@ export default function Dashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {dashboardData.employeeStats.map((emp: any, idx: number) => (
+                    {displayData.employeeStats.map((emp: any, idx: number) => (
                       <tr key={emp.id} className="border-b border-slate-50 hover:bg-slate-50/80">
                         <td className="px-6 py-3 font-semibold text-slate-800">
                           {idx + 1}. {emp.name} <span className="text-xs font-normal text-slate-400 block">{emp.id}</span>
@@ -807,7 +832,7 @@ export default function Dashboard() {
                       onChange={(e) => setSelectedDate(e.target.value)}
                     >
                       <option value="all">ทุกวันที่</option>
-                      {dashboardData.uniqueDates.map((d: string) => (
+                      {displayData.uniqueDates.map((d: string) => (
                         <option key={d} value={d}>{d}</option>
                       ))}
                     </select>
