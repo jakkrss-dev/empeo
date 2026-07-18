@@ -16,6 +16,7 @@ export default function Dashboard() {
   const [isDragging, setIsDragging] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const [dashboardData, setDashboardData] = useState<any>(null);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
   
   const [selectedEmpId, setSelectedEmpId] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -73,11 +74,21 @@ export default function Dashboard() {
           const row = rows[r];
           if (row && row.includes('รหัส') && row.includes('วันที่')) {
             colIdx.id = row.indexOf('รหัส');
-            colIdx.name = row.indexOf('ชื่อ - นามสกุล') > -1 ? row.indexOf('ชื่อ - นามสกุล') : colIdx.id + 3;
-            colIdx.pos = row.indexOf('ตำแหน่ง') > -1 ? row.indexOf('ตำแหน่ง') : colIdx.id + 7;
+            
+            // หาคอลัมน์ชื่อ-นามสกุล (C009 ใช้ 'ชื่อ-นามสกุล' ติดกัน)
+            if (row.indexOf('ชื่อ-นามสกุล') > -1) colIdx.name = row.indexOf('ชื่อ-นามสกุล');
+            else if (row.indexOf('ชื่อ - นามสกุล') > -1) colIdx.name = row.indexOf('ชื่อ - นามสกุล');
+            else colIdx.name = colIdx.id + 1; // Default ของ Empeo
+            
+            // แผนก/ฝ่าย
+            colIdx.pos = row.indexOf('ฝ่าย') > -1 ? row.indexOf('ฝ่าย') : colIdx.id + 3;
+            
             colIdx.date = row.indexOf('วันที่');
-            colIdx.in = row.indexOf('ครั้งที่ 1') > -1 ? row.indexOf('ครั้งที่ 1') : colIdx.date + 1;
-            colIdx.out = row.indexOf('ครั้งที่ 2') > -1 ? row.indexOf('ครั้งที่ 2') : colIdx.date + 2;
+            
+            // ใน C009 เวลาเข้าอยู่ถัดจากวันที่ 2 คอลัมน์ และเวลาออกอยู่ถัดไป 3 คอลัมน์
+            colIdx.in = colIdx.date + 2;
+            colIdx.out = colIdx.date + 3;
+            
             break;
           }
         }
@@ -279,6 +290,26 @@ export default function Dashboard() {
     localStorage.removeItem('empeoFileName');
   };
 
+  const syncData = async () => {
+    try {
+      setIsSyncing(true);
+      const res = await fetch('/api/sync', { method: 'POST' });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to sync');
+      }
+      const blob = await res.blob();
+      const filenameStr = res.headers.get('X-Filename') || 'Attendance_Report_Auto.xlsx';
+      const filename = decodeURIComponent(filenameStr);
+      const file = new File([blob], filename, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      await handleMultipleFilesUpload([file]);
+    } catch (error: any) {
+      alert("เกิดข้อผิดพลาดในการดึงข้อมูลอัตโนมัติ (ตรวจสอบว่าบอททำงานสำเร็จหรือไม่): " + error.message);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault(); setIsDragging(false);
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) { 
@@ -369,10 +400,23 @@ export default function Dashboard() {
             <p className="text-slate-500 mb-8 text-center max-w-md text-lg">
               สามารถลากและวาง <span className="font-semibold text-slate-700">หลายไฟล์พร้อมกัน</span> ลงที่นี่เพื่อรวมสถิติได้เลย
             </p>
-            <label className="bg-slate-900 hover:bg-blue-600 text-white px-8 py-3.5 rounded-xl font-semibold cursor-pointer transition-all shadow-md hover:shadow-xl hover:-translate-y-0.5">
-              เลือกไฟล์จากเครื่อง (เลือกได้หลายไฟล์)
-              <input type="file" className="hidden" accept=".xlsx, .xls, .csv" multiple onChange={onFileChange} />
-            </label>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <label className="bg-slate-900 hover:bg-blue-600 text-white px-8 py-3.5 rounded-xl font-semibold cursor-pointer transition-all shadow-md hover:shadow-xl hover:-translate-y-0.5 text-center">
+                เลือกไฟล์จากเครื่อง
+                <input type="file" className="hidden" accept=".xlsx, .xls, .csv" multiple onChange={onFileChange} />
+              </label>
+              <button 
+                onClick={syncData}
+                disabled={isSyncing}
+                className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-400 text-white px-8 py-3.5 rounded-xl font-semibold cursor-pointer transition-all shadow-md hover:shadow-xl hover:-translate-y-0.5 flex items-center justify-center gap-2"
+              >
+                {isSyncing ? (
+                  <><RefreshCw className="w-5 h-5 animate-spin" /> กำลังให้บอทดึงข้อมูล...</>
+                ) : (
+                  <><RefreshCw className="w-5 h-5" /> ดึงข้อมูลอัตโนมัติ (รันบอท)</>
+                )}
+              </button>
+            </div>
           </div>
         ) : (
           /* Dashboard Section */
