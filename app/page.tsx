@@ -25,19 +25,57 @@ export default function Dashboard() {
 
   useEffect(() => {
     setIsMounted(true);
-    const savedData = localStorage.getItem('empeoDashboardData');
-    const savedFileName = localStorage.getItem('empeoFileName');
     
-    if (savedData && savedFileName) {
+    // ดึงข้อมูลจาก Cloud Gist อัตโนมัติเมื่อเปิดเว็บ
+    const loadFromCloud = async () => {
+      const gistId = process.env.NEXT_PUBLIC_GIST_ID || "f401dd8cadb19f27a486bf4615aa1677";
       try {
-        setDashboardData(JSON.parse(savedData));
-        setFileName(savedFileName);
-      } catch (error) {
-        console.error("ไม่สามารถโหลดข้อมูลที่บันทึกไว้ได้", error);
-        localStorage.removeItem('empeoDashboardData');
-        localStorage.removeItem('empeoFileName');
+        console.log("กำลังดึงข้อมูลล่าสุดจาก Cloud...");
+        const res = await fetch(`https://api.github.com/gists/${gistId}`, { cache: 'no-store' });
+        if (!res.ok) throw new Error("Gist not found");
+        
+        const data = await res.json();
+        if (data && data.files && data.files['data.b64']) {
+          const b64Data = data.files['data.b64'].content;
+          
+          // แปลง Base64 กลับเป็นไฟล์ Excel
+          const byteStr = atob(b64Data);
+          const byteNumbers = new Array(byteStr.length);
+          for (let i = 0; i < byteStr.length; i++) {
+            byteNumbers[i] = byteStr.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          const blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+          const file = new File([blob], 'Cloud_Report_AutoSync.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+          
+          return [file];
+        }
+      } catch (err) {
+        console.error("โหลดข้อมูลจาก Cloud ไม่สำเร็จ:", err);
       }
-    }
+      return null;
+    };
+
+    loadFromCloud().then(files => {
+      if (files) {
+        // แอบรอแปบนึงให้ฟังก์ชันอื่นโหลดเสร็จ แล้วอัปโหลดไฟล์เข้าระบบ
+        setTimeout(() => handleMultipleFilesUpload(files), 500);
+      } else {
+        // Fallback ไปใช้ข้อมูลที่เคยบันทึกไว้ในเครื่อง
+        const savedData = localStorage.getItem('empeoDashboardData');
+        const savedFileName = localStorage.getItem('empeoFileName');
+        if (savedData && savedFileName) {
+          try {
+            setDashboardData(JSON.parse(savedData));
+            setFileName(savedFileName);
+          } catch (error) {
+            console.error("ไม่สามารถโหลดข้อมูลที่บันทึกไว้ได้", error);
+            localStorage.removeItem('empeoDashboardData');
+            localStorage.removeItem('empeoFileName');
+          }
+        }
+      }
+    });
   }, []);
 
   // ฟังก์ชันส่วนกลางสำหรับเรียงวันที่ DD/MM/YYYY ตามลำดับปฏิทินจริง
@@ -301,18 +339,26 @@ export default function Dashboard() {
   const syncData = async () => {
     try {
       setIsSyncing(true);
-      const res = await fetch('/api/sync', { method: 'POST' });
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to sync');
+      const gistId = process.env.NEXT_PUBLIC_GIST_ID || "f401dd8cadb19f27a486bf4615aa1677";
+      const res = await fetch(`https://api.github.com/gists/${gistId}`, { cache: 'no-store' });
+      if (!res.ok) throw new Error('ไม่สามารถดึงข้อมูลจาก Cloud ได้');
+      
+      const data = await res.json();
+      const b64Data = data.files['data.b64'].content;
+      
+      const byteStr = atob(b64Data);
+      const byteNumbers = new Array(byteStr.length);
+      for (let i = 0; i < byteStr.length; i++) {
+        byteNumbers[i] = byteStr.charCodeAt(i);
       }
-      const blob = await res.blob();
-      const filenameStr = res.headers.get('X-Filename') || 'Attendance_Report_Auto.xlsx';
-      const filename = decodeURIComponent(filenameStr);
-      const file = new File([blob], filename, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const file = new File([blob], 'Cloud_Report_AutoSync.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      
       await handleMultipleFilesUpload([file]);
+      alert("อัปเดตข้อมูลจาก Cloud เรียบร้อยแล้ว!");
     } catch (error: any) {
-      alert("เกิดข้อผิดพลาดในการดึงข้อมูลอัตโนมัติ (ตรวจสอบว่าบอททำงานสำเร็จหรือไม่): " + error.message);
+      alert("เกิดข้อผิดพลาดในการดึงข้อมูลจาก Cloud: " + error.message);
     } finally {
       setIsSyncing(false);
     }
@@ -419,9 +465,9 @@ export default function Dashboard() {
                 className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-400 text-white px-8 py-3.5 rounded-xl font-semibold cursor-pointer transition-all shadow-md hover:shadow-xl hover:-translate-y-0.5 flex items-center justify-center gap-2"
               >
                 {isSyncing ? (
-                  <><RefreshCw className="w-5 h-5 animate-spin" /> กำลังให้บอทดึงข้อมูล...</>
+                  <><RefreshCw className="w-5 h-5 animate-spin" /> กำลังซิงค์ข้อมูล...</>
                 ) : (
-                  <><RefreshCw className="w-5 h-5" /> ดึงข้อมูลอัตโนมัติ (รันบอท)</>
+                  <><RefreshCw className="w-5 h-5" /> อัปเดตข้อมูลจาก Cloud</>
                 )}
               </button>
             </div>
