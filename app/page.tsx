@@ -493,8 +493,8 @@ export default function Dashboard() {
   let empTotalDays = 0, empComplete = 0, empLateCount = 0, empIncomplete = 0;
   let empChartData: any[] = [];
   
-  if (dashboardData && selectedEmpId) {
-    const empRecords = dashboardData.records.filter((r: any) => String(r.empId) === String(selectedEmpId));
+  if (displayData && selectedEmpId) {
+    const empRecords = displayData.records.filter((r: any) => String(r.empId) === String(selectedEmpId));
     empTotalDays = empRecords.length;
     empIncomplete = empRecords.filter((r: any) => r.isIncomplete).length;
     empLateCount = empRecords.filter((r: any) => r.isLate).length;
