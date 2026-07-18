@@ -125,6 +125,14 @@ export default function Dashboard() {
                 const tInStr = timeIn ? String(timeIn).trim() : '';
                 const tOutStr = timeOut ? String(timeOut).trim() : '';
                 
+                // ตรวจสอบสถานะ (วันหยุด, ขาดงาน, ปกติ) ซึ่งใน C009 จะอยู่ถัดจากวันที่ 4 คอลัมน์
+                const statusStr = String(row[colIdx.date + 4] || '').trim();
+                
+                // ถ้าเป็นวันหยุดและไม่มีการสแกนนิ้วเข้างาน ให้ข้ามไปเลย (ลบวันหยุดออก)
+                if (statusStr.includes('วันหยุด') && (tInStr === '' || tInStr === '-')) {
+                    continue;
+                }
+                
                 const isMissedIn = tInStr === '' || tInStr === '-';
                 const isMissedOut = tOutStr === '' || tOutStr === '-';
                 const isIncomplete = isMissedIn || isMissedOut;
