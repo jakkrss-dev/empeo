@@ -364,6 +364,20 @@ export default function Dashboard() {
     }
   };
 
+  const triggerSyncData = async () => {
+    try {
+      setIsSyncing(true);
+      const res = await fetch('/api/sync', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to trigger sync');
+      alert(data.message + "\n(โปรดรอประมาณ 1 นาที แล้วค่อยกดปุ่ม 'ดึงข้อมูลล่าสุด' อีกครั้ง)");
+    } catch (error: any) {
+      alert("เกิดข้อผิดพลาดในการสั่งบอท: " + error.message);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault(); setIsDragging(false);
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) { 
@@ -421,17 +435,36 @@ export default function Dashboard() {
             </div>
             <div>
               <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Empeo Attendance Dashboard</h1>
-              <p className="text-sm text-slate-500 font-medium">ระบบวิเคราะห์ข้อมูลเวลาเข้า-ออกงานอัตโนมัติ (รองรับหลายไฟล์)</p>
+              <p className="text-sm text-slate-500 font-medium flex items-center gap-2">
+                <UploadCloud className="w-4 h-4" /> 
+                {fileName || "ระบบวิเคราะห์ข้อมูลการเข้างาน"}
+              </p>
             </div>
           </div>
           
           {dashboardData && (
-            <button 
-              onClick={clearData}
-              className="flex items-center gap-2 text-sm bg-white hover:bg-slate-50 text-slate-700 px-5 py-2.5 rounded-full font-medium transition-all shadow-sm border border-slate-200 hover:shadow"
-            >
-              <RefreshCw className="w-4 h-4" /> อัปโหลดไฟล์ใหม่
-            </button>
+            <div className="flex gap-2">
+              <button 
+                onClick={syncData}
+                disabled={isSyncing}
+                className="flex items-center gap-2 text-sm bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-4 py-2.5 rounded-full font-medium transition-colors border border-indigo-200"
+              >
+                <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} /> อัปเดตข้อมูลจาก Cloud
+              </button>
+              <button 
+                onClick={triggerSyncData}
+                disabled={isSyncing}
+                className="flex items-center gap-2 text-sm bg-emerald-50 hover:bg-emerald-100 text-emerald-600 px-4 py-2.5 rounded-full font-medium transition-colors border border-emerald-200"
+              >
+                <RefreshCw className="w-4 h-4" /> สั่งบอทรัน (1 นาที)
+              </button>
+              <button 
+                onClick={clearData}
+                className="flex items-center gap-2 text-sm bg-white hover:bg-red-50 text-slate-700 hover:text-red-600 px-4 py-2.5 rounded-full font-medium transition-all shadow-sm border border-slate-200 hover:border-red-200"
+              >
+                <RefreshCw className="w-4 h-4" /> อัปโหลดใหม่
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -462,13 +495,20 @@ export default function Dashboard() {
               <button 
                 onClick={syncData}
                 disabled={isSyncing}
-                className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-400 text-white px-8 py-3.5 rounded-xl font-semibold cursor-pointer transition-all shadow-md hover:shadow-xl hover:-translate-y-0.5 flex items-center justify-center gap-2"
+                className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-400 text-white px-6 py-3.5 rounded-xl font-semibold cursor-pointer transition-all shadow-md hover:-translate-y-0.5 flex items-center justify-center gap-2"
               >
                 {isSyncing ? (
                   <><RefreshCw className="w-5 h-5 animate-spin" /> กำลังซิงค์ข้อมูล...</>
                 ) : (
                   <><RefreshCw className="w-5 h-5" /> อัปเดตข้อมูลจาก Cloud</>
                 )}
+              </button>
+              <button 
+                onClick={triggerSyncData}
+                disabled={isSyncing}
+                className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-400 text-white px-6 py-3.5 rounded-xl font-semibold cursor-pointer transition-all shadow-md hover:-translate-y-0.5 flex items-center justify-center gap-2"
+              >
+                <RefreshCw className="w-5 h-5" /> สั่งบอทอัปเดต (รอ 1 นาที)
               </button>
             </div>
           </div>

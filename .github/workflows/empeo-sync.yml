@@ -1,0 +1,39 @@
+name: Empeo Data Sync
+
+on:
+  schedule:
+    # Run every day at 11:00 UTC (18:00 ICT - Bangkok Time)
+    - cron: '0 11 * * *'
+  workflow_dispatch:
+    # Allows manual trigger from GitHub Actions UI or API
+  repository_dispatch:
+    # Allows triggering from external API (Vercel Next.js)
+    types: [trigger-sync]
+
+jobs:
+  sync-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install selenium webdriver-manager
+        
+    - name: Set up Chrome
+      uses: browser-actions/setup-chrome@v1
+      
+    - name: Run Headless Sync Bot
+      env:
+        GIST_GITHUB_TOKEN: ${{ secrets.GIST_GITHUB_TOKEN }}
+        NEXT_PUBLIC_GIST_ID: ${{ secrets.NEXT_PUBLIC_GIST_ID }}
+      run: |
+        python headless_empeo.py

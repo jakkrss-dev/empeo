@@ -1,47 +1,32 @@
 import { NextResponse } from 'next/server';
-import { exec } from 'child_process';
-import util from 'util';
-import fs from 'fs';
-import path from 'path';
-
-const execPromise = util.promisify(exec);
 
 export async function POST() {
   try {
-    // 1. รันสคริปต์ Python เพื่อดึงข้อมูลใหม่
-    // ใช้คำสั่ง python ปกติและ path ต้องถูกต้อง
-    await execPromise('python "D:\\empeo data\\empeo.py"');
+    const githubToken = process.env.GIST_GITHUB_TOKEN;
     
-    // 2. หาไฟล์ล่าสุดในโฟลเดอร์ Downloads
-    const downloadsDir = 'C:\\Users\\Asus\\Downloads';
-    const files = fs.readdirSync(downloadsDir);
-    const excelFiles = files.filter(f => f.startsWith('Attendance_Report_') && f.endsWith('.xlsx'));
-    
-    if (excelFiles.length === 0) {
-      return NextResponse.json({ error: 'ไม่พบไฟล์รายงานใน Downloads' }, { status: 404 });
+    if (!githubToken) {
+      return NextResponse.json({ error: 'ไม่พบ GIST_GITHUB_TOKEN ในระบบ Vercel' }, { status: 500 });
     }
     
-    // เรียงตามเวลาล่าสุด
-    excelFiles.sort((a, b) => {
-      const statA = fs.statSync(path.join(downloadsDir, a));
-      const statB = fs.statSync(path.join(downloadsDir, b));
-      return statB.mtime.getTime() - statA.mtime.getTime();
-    });
-    
-    const latestFile = excelFiles[0];
-    const filePath = path.join(downloadsDir, latestFile);
-    const fileBuffer = fs.readFileSync(filePath);
-    
-    // ส่งไฟล์กลับไปให้ Frontend
-    return new Response(fileBuffer, {
+    // สั่งปลุกบอทบน GitHub Actions
+    const res = await fetch("https://api.github.com/repos/jakkrss-dev/empeo/dispatches", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'Content-Disposition': `attachment; filename="${encodeURIComponent(latestFile)}"`,
-        'X-Filename': encodeURIComponent(latestFile)
-      }
+        Authorization: `Bearer ${githubToken}`,
+        Accept: "application/vnd.github.v3+json",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ event_type: "trigger-sync" })
     });
+    
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`GitHub API Error: ${res.status} ${errorText}`);
+    }
+    
+    return NextResponse.json({ success: true, message: 'สั่งรันบอทบน Cloud สำเร็จ! บอทกำลังทำงาน...' });
   } catch (err: any) {
     console.error("Sync error:", err);
-    return NextResponse.json({ error: err.message || 'เกิดข้อผิดพลาดในการดึงข้อมูล' }, { status: 500 });
+    return NextResponse.json({ error: err.message || 'เกิดข้อผิดพลาดในการสั่งรันบอท' }, { status: 500 });
   }
 }
