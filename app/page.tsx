@@ -8,7 +8,7 @@ import {
 } from 'recharts';
 import { 
   Users, RefreshCw, Clock, AlertCircle, Briefcase, CalendarCheck, UserCheck, Calendar, UserX,
-  Search, Filter, CalendarDays, TrendingDown, Layers
+  Search, Filter, CalendarDays, TrendingDown, Layers, UploadCloud
 } from 'lucide-react';
 
 export default function Dashboard() {
