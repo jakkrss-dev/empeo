@@ -16,12 +16,12 @@ if not GITHUB_TOKEN:
     exit(1)
 GIST_ID_FILE = "gist_id.txt"
 
-print("1. ข้ามการรัน empeo.py ชั่วคราว (ใช้อันเก่าก่อนเพื่อทดสอบ)...")
-# try:
-#     subprocess.run(["python", r"empeo.py"], cwd=r"D:\empeo data", check=True)
-# except subprocess.CalledProcessError:
-#     print("เกิดข้อผิดพลาดในการรัน empeo.py")
-#     exit(1)
+print("1. กำลังสั่งให้บอท (empeo.py) ดึงข้อมูลล่าสุด...")
+try:
+    subprocess.run(["python", r"D:\empeo data\empeo.py"], check=True)
+except subprocess.CalledProcessError:
+    print("เกิดข้อผิดพลาดในการรัน empeo.py")
+    exit(1)
 
 print("2. ค้นหาไฟล์ Excel ล่าสุดในโฟลเดอร์ Downloads...")
 download_dir = os.path.expanduser(r"~\Downloads")
