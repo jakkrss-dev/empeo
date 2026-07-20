@@ -397,7 +397,7 @@ export default function Dashboard() {
       // 3. Poll for gist update
       let attempts = 0;
       let isUpdated = false;
-      const maxAttempts = 36; // 36 * 5s = 180s (3 mins)
+      const maxAttempts = 24; // 24 * 5s = 120s (2 mins)
       
       while (attempts < maxAttempts) {
         await new Promise(resolve => setTimeout(resolve, 5000)); // wait 5s
