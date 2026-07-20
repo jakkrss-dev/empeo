@@ -139,13 +139,13 @@ export default function Dashboard() {
             
             const idCol = row[colIdx.id];
             
-            if (idCol === 'ฝ่าย') {
-                const rawDept = String(row[colIdx.id + 2] || '').trim();
+            if (idCol === 'ฝ่าย' || idCol === 'แผนก' || idCol === 'สังกัด') {
+                const rawDept = String(row[colIdx.id + 1] || row[colIdx.id + 2] || '').trim();
                 currentDept = rawDept || 'ไม่ระบุ';
                 continue;
             }
             
-            if (idCol && idCol !== 'รหัส' && idCol !== 'ฝ่าย' && row[colIdx.name]) {
+            if (idCol && idCol !== 'รหัส' && idCol !== 'ฝ่าย' && idCol !== 'แผนก' && idCol !== 'สังกัด' && row[colIdx.name]) {
                 currentEmpId = String(idCol).trim();
                 currentEmpName = String(row[colIdx.name]).trim();
                 const currentPosition = String(row[colIdx.pos] || 'ไม่ระบุ').trim();
