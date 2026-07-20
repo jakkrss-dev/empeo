@@ -121,7 +121,10 @@ export default function Dashboard() {
             else colIdx.name = colIdx.id + 1; // Default ของ Empeo
             
             // แผนก/ฝ่าย
-            colIdx.pos = row.indexOf('ฝ่าย') > -1 ? row.indexOf('ฝ่าย') : colIdx.id + 3;
+            let deptColIdx = row.indexOf('ฝ่าย');
+            if (deptColIdx === -1) deptColIdx = row.indexOf('แผนก');
+            if (deptColIdx === -1) deptColIdx = row.indexOf('สังกัด');
+            colIdx.pos = deptColIdx > -1 ? deptColIdx : colIdx.id + 3;
             
             colIdx.date = row.indexOf('วันที่');
             
@@ -148,11 +151,12 @@ export default function Dashboard() {
             if (idCol && idCol !== 'รหัส' && idCol !== 'ฝ่าย' && idCol !== 'แผนก' && idCol !== 'สังกัด' && row[colIdx.name]) {
                 currentEmpId = String(idCol).trim();
                 currentEmpName = String(row[colIdx.name]).trim();
-                const currentPosition = String(row[colIdx.pos] || 'ไม่ระบุ').trim();
+                const currentPosition = String(row[colIdx.pos] || '').trim();
+                const finalDept = currentPosition || currentDept || 'ไม่ระบุ';
                 
                 if (!uniqueEmployees.has(currentEmpId)) {
                     uniqueEmployees.set(currentEmpId, {
-                        id: currentEmpId, name: currentEmpName, dept: currentDept, position: currentPosition
+                        id: currentEmpId, name: currentEmpName, dept: finalDept, position: currentPosition
                     });
                 }
             }
