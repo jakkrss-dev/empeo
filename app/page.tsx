@@ -17,6 +17,7 @@ export default function Dashboard() {
   const [fileName, setFileName] = useState<string | null>(null);
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [triggerStatus, setTriggerStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   
     const [selectedEmpId, setSelectedEmpId] = useState<string>('');
   const [startDate, setStartDate] = useState<string>('');
@@ -373,11 +374,17 @@ export default function Dashboard() {
   const triggerSyncData = async () => {
     try {
       setIsSyncing(true);
+      setTriggerStatus('loading');
       const res = await fetch('/api/sync', { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to trigger sync');
+      
+      setTriggerStatus('success');
+      setTimeout(() => setTriggerStatus('idle'), 5000);
       alert(data.message + "\n(โปรดรอประมาณ 1 นาที แล้วค่อยกดปุ่ม 'ดึงข้อมูลล่าสุด' อีกครั้ง)");
     } catch (error: any) {
+      setTriggerStatus('error');
+      setTimeout(() => setTriggerStatus('idle'), 5000);
       alert("เกิดข้อผิดพลาดในการสั่งบอท: " + error.message);
     } finally {
       setIsSyncing(false);
@@ -541,10 +548,22 @@ export default function Dashboard() {
               </button>
               <button 
                 onClick={triggerSyncData}
-                disabled={isSyncing}
-                className="flex items-center gap-2 text-sm bg-emerald-50 hover:bg-emerald-100 text-emerald-600 px-4 py-2.5 rounded-full font-medium transition-colors border border-emerald-200"
+                disabled={isSyncing || triggerStatus === 'success'}
+                className={`flex items-center gap-2 text-sm px-4 py-2.5 rounded-full font-medium transition-colors border ${
+                  triggerStatus === 'success' 
+                    ? 'bg-green-50 text-green-600 border-green-200' 
+                    : triggerStatus === 'error'
+                    ? 'bg-red-50 text-red-600 border-red-200'
+                    : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border-emerald-200'
+                }`}
               >
-                <RefreshCw className="w-4 h-4" /> สั่งบอทรัน (1 นาที)
+                {triggerStatus === 'loading' ? (
+                  <><RefreshCw className="w-4 h-4 animate-spin" /> กำลังสั่งรัน...</>
+                ) : triggerStatus === 'success' ? (
+                  <><CalendarCheck className="w-4 h-4" /> สั่งรันสำเร็จ!</>
+                ) : (
+                  <><RefreshCw className="w-4 h-4" /> สั่งบอทรัน (1 นาที)</>
+                )}
               </button>
               <button 
                 onClick={clearData}
@@ -593,10 +612,22 @@ export default function Dashboard() {
               </button>
               <button 
                 onClick={triggerSyncData}
-                disabled={isSyncing}
-                className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-400 text-white px-6 py-3.5 rounded-xl font-semibold cursor-pointer transition-all shadow-md hover:-translate-y-0.5 flex items-center justify-center gap-2"
+                disabled={isSyncing || triggerStatus === 'success'}
+                className={`text-white px-6 py-3.5 rounded-xl font-semibold cursor-pointer transition-all shadow-md hover:-translate-y-0.5 flex items-center justify-center gap-2 ${
+                  triggerStatus === 'success'
+                    ? 'bg-green-600 hover:bg-green-500'
+                    : triggerStatus === 'error'
+                    ? 'bg-red-600 hover:bg-red-500'
+                    : 'bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-400'
+                }`}
               >
-                <RefreshCw className="w-5 h-5" /> สั่งบอทอัปเดต (รอ 1 นาที)
+                {triggerStatus === 'loading' ? (
+                  <><RefreshCw className="w-5 h-5 animate-spin" /> กำลังสั่งบอท...</>
+                ) : triggerStatus === 'success' ? (
+                  <><CalendarCheck className="w-5 h-5" /> สั่งรันสำเร็จ!</>
+                ) : (
+                  <><RefreshCw className="w-5 h-5" /> สั่งบอทอัปเดต (รอ 1 นาที)</>
+                )}
               </button>
             </div>
           </div>
