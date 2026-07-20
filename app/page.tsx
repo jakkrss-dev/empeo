@@ -34,7 +34,7 @@ export default function Dashboard() {
       const gistId = process.env.NEXT_PUBLIC_GIST_ID || "f401dd8cadb19f27a486bf4615aa1677";
       try {
         console.log("กำลังดึงข้อมูลล่าสุดจาก Cloud...");
-        const res = await fetch(`https://api.github.com/gists/${gistId}`, { cache: 'no-store' });
+        const res = await fetch(`/api/gist`, { cache: 'no-store' });
         if (!res.ok) throw new Error("Gist not found");
         
         const data = await res.json();
@@ -347,7 +347,7 @@ export default function Dashboard() {
     try {
       setIsSyncing(true);
       const gistId = process.env.NEXT_PUBLIC_GIST_ID || "f401dd8cadb19f27a486bf4615aa1677";
-      const res = await fetch(`https://api.github.com/gists/${gistId}`, { cache: 'no-store' });
+      const res = await fetch(`/api/gist`, { cache: 'no-store' });
       if (!res.ok) throw new Error('ไม่สามารถดึงข้อมูลจาก Cloud ได้');
       
       const data = await res.json();
@@ -380,7 +380,7 @@ export default function Dashboard() {
       // 1. Get current updated_at
       let initialUpdatedAt = null;
       try {
-        const gistCheck = await fetch(`https://api.github.com/gists/${gistId}`, { cache: 'no-store' });
+        const gistCheck = await fetch(`/api/gist`, { cache: 'no-store' });
         if (gistCheck.ok) {
           const gistData = await gistCheck.json();
           initialUpdatedAt = gistData.updated_at;
@@ -403,7 +403,7 @@ export default function Dashboard() {
         await new Promise(resolve => setTimeout(resolve, 5000)); // wait 5s
         attempts++;
         try {
-          const checkRes = await fetch(`https://api.github.com/gists/${gistId}`, { cache: 'no-store' });
+          const checkRes = await fetch(`/api/gist`, { cache: 'no-store' });
           if (checkRes.ok) {
             const checkData = await checkRes.json();
             if (initialUpdatedAt && checkData.updated_at !== initialUpdatedAt) {
