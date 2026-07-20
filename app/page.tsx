@@ -375,13 +375,63 @@ export default function Dashboard() {
     try {
       setIsSyncing(true);
       setTriggerStatus('loading');
+      
+      const gistId = process.env.NEXT_PUBLIC_GIST_ID || "f401dd8cadb19f27a486bf4615aa1677";
+      // 1. Get current updated_at
+      let initialUpdatedAt = null;
+      try {
+        const gistCheck = await fetch(`https://api.github.com/gists/${gistId}`, { cache: 'no-store' });
+        if (gistCheck.ok) {
+          const gistData = await gistCheck.json();
+          initialUpdatedAt = gistData.updated_at;
+        }
+      } catch (e) {
+        console.warn("Could not get initial gist updated_at");
+      }
+
+      // 2. Trigger the sync
       const res = await fetch('/api/sync', { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to trigger sync');
       
-      setTriggerStatus('success');
-      setTimeout(() => setTriggerStatus('idle'), 5000);
-      alert(data.message + "\n(โปรดรอประมาณ 1 นาที แล้วค่อยกดปุ่ม 'ดึงข้อมูลล่าสุด' อีกครั้ง)");
+      // 3. Poll for gist update
+      let attempts = 0;
+      let isUpdated = false;
+      const maxAttempts = 36; // 36 * 5s = 180s (3 mins)
+      
+      while (attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 5000)); // wait 5s
+        attempts++;
+        try {
+          const checkRes = await fetch(`https://api.github.com/gists/${gistId}`, { cache: 'no-store' });
+          if (checkRes.ok) {
+            const checkData = await checkRes.json();
+            if (initialUpdatedAt && checkData.updated_at !== initialUpdatedAt) {
+              isUpdated = true;
+              // Auto-sync the new data
+              const b64Data = checkData.files['data.b64'].content;
+              const byteStr = atob(b64Data);
+              const byteNumbers = new Array(byteStr.length);
+              for (let i = 0; i < byteStr.length; i++) byteNumbers[i] = byteStr.charCodeAt(i);
+              const byteArray = new Uint8Array(byteNumbers);
+              const blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+              const file = new File([blob], 'Cloud_Report_AutoSync.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+              await handleMultipleFilesUpload([file]);
+              break;
+            }
+          }
+        } catch (e) {
+          // ignore network errors during polling
+        }
+      }
+      
+      if (isUpdated) {
+        setTriggerStatus('success');
+        setTimeout(() => setTriggerStatus('idle'), 3000);
+      } else {
+        throw new Error("หมดเวลารอ (Timeout) บอทอาจทำงานล้มเหลว หรือคิวเต็ม");
+      }
+      
     } catch (error: any) {
       setTriggerStatus('error');
       setTimeout(() => setTriggerStatus('idle'), 5000);
@@ -1029,6 +1079,34 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+      {/* Loading Overlay */}
+      {(triggerStatus === 'loading' || triggerStatus === 'success') && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300">
+          <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full mx-4 flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
+            {triggerStatus === 'loading' ? (
+              <>
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 border-4 border-indigo-100 rounded-full"></div>
+                  <div className="border-4 border-indigo-600 rounded-full w-16 h-16 border-t-transparent animate-spin"></div>
+                </div>
+                <h3 className="text-xl font-bold text-slate-800 mb-2">กำลังทำงานบน Cloud</h3>
+                <p className="text-sm text-slate-500 leading-relaxed">
+                  ระบบกำลังรันบอทเพื่อดึงข้อมูลล่าสุดจาก Empeo...<br />
+                  <span className="font-semibold text-indigo-600 mt-2 block">อาจใช้เวลาประมาณ 1-2 นาที โปรดรอสักครู่ ห้ามปิดหน้านี้</span>
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="bg-emerald-100 p-4 rounded-full text-emerald-600 mb-6 animate-in scale-in duration-300">
+                  <CalendarCheck className="w-10 h-10" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-800 mb-2">ดึงข้อมูลสำเร็จ!</h3>
+                <p className="text-sm text-slate-500">ข้อมูลอัปเดตเป็นปัจจุบันเรียบร้อยแล้ว</p>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
