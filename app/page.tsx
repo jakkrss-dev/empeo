@@ -8,7 +8,7 @@ import {
 } from 'recharts';
 import { 
   Users, RefreshCw, Clock, AlertCircle, Briefcase, CalendarCheck, UserCheck, Calendar, UserX,
-  Search, Filter, CalendarDays, TrendingDown, Layers, UploadCloud
+  Search, Filter, CalendarDays, TrendingDown, Layers, UploadCloud, Download
 } from 'lucide-react';
 
 export default function Dashboard() {
@@ -384,6 +384,41 @@ export default function Dashboard() {
     }
   };
 
+  const downloadExcel = async () => {
+    try {
+      setIsSyncing(true);
+      const res = await fetch(`/api/gist`, { cache: 'no-store' });
+      if (!res.ok) throw new Error('ไม่สามารถดึงข้อมูลจาก Cloud ได้');
+      
+      const data = await res.json();
+      if (!data.files || !data.files['data.b64']) {
+        throw new Error('ไม่พบไฟล์ข้อมูลในระบบ');
+      }
+      const b64Data = data.files['data.b64'].content;
+      
+      const byteStr = atob(b64Data);
+      const byteNumbers = new Array(byteStr.length);
+      for (let i = 0; i < byteStr.length; i++) {
+        byteNumbers[i] = byteStr.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Empeo_Report_Cloud.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+    } catch (error: any) {
+      alert("เกิดข้อผิดพลาดในการดาวน์โหลดไฟล์: " + error.message);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault(); setIsDragging(false);
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) { 
@@ -547,6 +582,13 @@ export default function Dashboard() {
                 <RefreshCw className="w-4 h-4" /> สั่งบอทรัน (1 นาที)
               </button>
               <button 
+                onClick={downloadExcel}
+                disabled={isSyncing}
+                className="flex items-center gap-2 text-sm bg-blue-50 hover:bg-blue-100 text-blue-600 px-4 py-2.5 rounded-full font-medium transition-colors border border-blue-200"
+              >
+                <Download className="w-4 h-4" /> โหลดไฟล์ Excel
+              </button>
+              <button 
                 onClick={clearData}
                 className="flex items-center gap-2 text-sm bg-white hover:bg-red-50 text-slate-700 hover:text-red-600 px-4 py-2.5 rounded-full font-medium transition-all shadow-sm border border-slate-200 hover:border-red-200"
               >
@@ -597,6 +639,13 @@ export default function Dashboard() {
                 className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-400 text-white px-6 py-3.5 rounded-xl font-semibold cursor-pointer transition-all shadow-md hover:-translate-y-0.5 flex items-center justify-center gap-2"
               >
                 <RefreshCw className="w-5 h-5" /> สั่งบอทอัปเดต (รอ 1 นาที)
+              </button>
+              <button 
+                onClick={downloadExcel}
+                disabled={isSyncing}
+                className="bg-blue-600 hover:bg-blue-500 disabled:bg-slate-400 text-white px-6 py-3.5 rounded-xl font-semibold cursor-pointer transition-all shadow-md hover:-translate-y-0.5 flex items-center justify-center gap-2"
+              >
+                <Download className="w-5 h-5" /> โหลดไฟล์ Excel
               </button>
             </div>
           </div>
