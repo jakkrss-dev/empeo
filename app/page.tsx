@@ -662,9 +662,9 @@ export default function Dashboard() {
                 <div className="absolute top-0 right-0 p-4 opacity-5"><Briefcase className="w-24 h-24" /></div>
                 <div className="flex items-center gap-3 mb-4">
                   <div className="bg-emerald-100 p-2.5 rounded-lg text-emerald-600"><Briefcase className="w-5 h-5" /></div>
-                  <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">จำนวนแผนก</p>
+                  <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">จำนวนฝ่าย</p>
                 </div>
-                <h4 className="text-4xl font-extrabold text-slate-800">{displayData.totalDepts} <span className="text-lg font-medium text-slate-500">แผนก</span></h4>
+                <h4 className="text-4xl font-extrabold text-slate-800">{displayData.totalDepts} <span className="text-lg font-medium text-slate-500">ฝ่าย</span></h4>
               </div>
             </div>
 
@@ -853,7 +853,7 @@ export default function Dashboard() {
                   <thead className="text-xs text-slate-500 bg-slate-50 uppercase font-semibold sticky top-0 z-10 shadow-sm">
                     <tr>
                       <th className="px-6 py-4">พนักงาน</th>
-                      <th className="px-6 py-4">แผนก</th>
+                      <th className="px-6 py-4">ฝ่าย</th>
                       <th className="px-6 py-4 text-center">วันทำงานทั้งหมด</th>
                       <th className="px-6 py-4 text-center">ชั่วโมงทำงานรวม</th>
                       <th className="px-6 py-4 text-center">มาสาย</th>
@@ -942,7 +942,7 @@ export default function Dashboard() {
                     <tr>
                       <th className="px-6 py-4 whitespace-nowrap">วันที่</th>
                       <th className="px-6 py-4 whitespace-nowrap">พนักงาน</th>
-                      <th className="px-6 py-4 whitespace-nowrap">แผนก</th>
+                      <th className="px-6 py-4 whitespace-nowrap">ฝ่าย</th>
                       <th className="px-6 py-4 whitespace-nowrap text-center">เวลาเข้า</th>
                       <th className="px-6 py-4 whitespace-nowrap text-center">เวลาออก</th>
                       <th className="px-6 py-4 whitespace-nowrap text-center">ชั่วโมงทำงาน</th>
