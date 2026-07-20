@@ -377,16 +377,22 @@ export default function Dashboard() {
       setTriggerStatus('loading');
       
       const gistId = process.env.NEXT_PUBLIC_GIST_ID || "f401dd8cadb19f27a486bf4615aa1677";
-      // 1. Get current updated_at
+      // 1. Get current updated_at and initial action run id
       let initialUpdatedAt = null;
+      let initialRunId = null;
       try {
         const gistCheck = await fetch(`/api/gist`, { cache: 'no-store' });
         if (gistCheck.ok) {
           const gistData = await gistCheck.json();
           initialUpdatedAt = gistData.updated_at;
         }
+        const actionCheck = await fetch(`/api/action-status`, { cache: 'no-store' });
+        if (actionCheck.ok) {
+          const actionData = await actionCheck.json();
+          initialRunId = actionData.id;
+        }
       } catch (e) {
-        console.warn("Could not get initial gist updated_at");
+        console.warn("Could not get initial state");
       }
 
       // 2. Trigger the sync
@@ -394,7 +400,7 @@ export default function Dashboard() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to trigger sync');
       
-      // 3. Poll for gist update
+      // 3. Poll for gist update and action status
       let attempts = 0;
       let isUpdated = false;
       const maxAttempts = 24; // 24 * 5s = 120s (2 mins)
@@ -403,6 +409,17 @@ export default function Dashboard() {
         await new Promise(resolve => setTimeout(resolve, 5000)); // wait 5s
         attempts++;
         try {
+          // Check action status first
+          const checkAction = await fetch(`/api/action-status`, { cache: 'no-store' });
+          if (checkAction.ok) {
+            const checkData = await checkAction.json();
+            if (checkData.id && checkData.id !== initialRunId) {
+              if (checkData.status === 'completed' && checkData.conclusion === 'failure') {
+                throw new Error("บอททำงานล้มเหลว (กรุณาตรวจสอบการตั้งค่า GIST_GITHUB_TOKEN ใน GitHub Secrets)");
+              }
+            }
+          }
+
           const checkRes = await fetch(`/api/gist`, { cache: 'no-store' });
           if (checkRes.ok) {
             const checkData = await checkRes.json();
@@ -420,7 +437,10 @@ export default function Dashboard() {
               break;
             }
           }
-        } catch (e) {
+        } catch (e: any) {
+          if (e.message && e.message.includes("บอททำงานล้มเหลว")) {
+            throw e;
+          }
           // ignore network errors during polling
         }
       }
