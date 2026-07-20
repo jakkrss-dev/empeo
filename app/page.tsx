@@ -17,7 +17,6 @@ export default function Dashboard() {
   const [fileName, setFileName] = useState<string | null>(null);
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
-  const [triggerStatus, setTriggerStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   
     const [selectedEmpId, setSelectedEmpId] = useState<string>('');
   const [startDate, setStartDate] = useState<string>('');
@@ -374,87 +373,11 @@ export default function Dashboard() {
   const triggerSyncData = async () => {
     try {
       setIsSyncing(true);
-      setTriggerStatus('loading');
-      
-      const gistId = process.env.NEXT_PUBLIC_GIST_ID || "f401dd8cadb19f27a486bf4615aa1677";
-      // 1. Get current updated_at and initial action run id
-      let initialUpdatedAt = null;
-      let initialRunId = null;
-      try {
-        const gistCheck = await fetch(`/api/gist`, { cache: 'no-store' });
-        if (gistCheck.ok) {
-          const gistData = await gistCheck.json();
-          initialUpdatedAt = gistData.updated_at;
-        }
-        const actionCheck = await fetch(`/api/action-status`, { cache: 'no-store' });
-        if (actionCheck.ok) {
-          const actionData = await actionCheck.json();
-          initialRunId = actionData.id;
-        }
-      } catch (e) {
-        console.warn("Could not get initial state");
-      }
-
-      // 2. Trigger the sync
       const res = await fetch('/api/sync', { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to trigger sync');
-      
-      // 3. Poll for gist update and action status
-      let attempts = 0;
-      let isUpdated = false;
-      const maxAttempts = 24; // 24 * 5s = 120s (2 mins)
-      
-      while (attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 5000)); // wait 5s
-        attempts++;
-        try {
-          // Check action status first
-          const checkAction = await fetch(`/api/action-status`, { cache: 'no-store' });
-          if (checkAction.ok) {
-            const checkData = await checkAction.json();
-            if (checkData.id && checkData.id !== initialRunId) {
-              if (checkData.status === 'completed' && checkData.conclusion === 'failure') {
-                throw new Error("บอททำงานล้มเหลว (กรุณาตรวจสอบการตั้งค่า GIST_GITHUB_TOKEN ใน GitHub Secrets)");
-              }
-            }
-          }
-
-          const checkRes = await fetch(`/api/gist`, { cache: 'no-store' });
-          if (checkRes.ok) {
-            const checkData = await checkRes.json();
-            if (initialUpdatedAt && checkData.updated_at !== initialUpdatedAt) {
-              isUpdated = true;
-              // Auto-sync the new data
-              const b64Data = checkData.files['data.b64'].content;
-              const byteStr = atob(b64Data);
-              const byteNumbers = new Array(byteStr.length);
-              for (let i = 0; i < byteStr.length; i++) byteNumbers[i] = byteStr.charCodeAt(i);
-              const byteArray = new Uint8Array(byteNumbers);
-              const blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-              const file = new File([blob], 'Cloud_Report_AutoSync.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-              await handleMultipleFilesUpload([file]);
-              break;
-            }
-          }
-        } catch (e: any) {
-          if (e.message && e.message.includes("บอททำงานล้มเหลว")) {
-            throw e;
-          }
-          // ignore network errors during polling
-        }
-      }
-      
-      if (isUpdated) {
-        setTriggerStatus('success');
-        setTimeout(() => setTriggerStatus('idle'), 3000);
-      } else {
-        throw new Error("หมดเวลารอ (Timeout) บอทอาจทำงานล้มเหลว หรือคิวเต็ม");
-      }
-      
+      alert(data.message + "\n(โปรดรอประมาณ 1 นาที แล้วค่อยกดปุ่ม 'ดึงข้อมูลล่าสุด' อีกครั้ง)");
     } catch (error: any) {
-      setTriggerStatus('error');
-      setTimeout(() => setTriggerStatus('idle'), 5000);
       alert("เกิดข้อผิดพลาดในการสั่งบอท: " + error.message);
     } finally {
       setIsSyncing(false);
@@ -618,22 +541,10 @@ export default function Dashboard() {
               </button>
               <button 
                 onClick={triggerSyncData}
-                disabled={isSyncing || triggerStatus === 'success'}
-                className={`flex items-center gap-2 text-sm px-4 py-2.5 rounded-full font-medium transition-colors border ${
-                  triggerStatus === 'success' 
-                    ? 'bg-green-50 text-green-600 border-green-200' 
-                    : triggerStatus === 'error'
-                    ? 'bg-red-50 text-red-600 border-red-200'
-                    : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border-emerald-200'
-                }`}
+                disabled={isSyncing}
+                className="flex items-center gap-2 text-sm bg-emerald-50 hover:bg-emerald-100 text-emerald-600 px-4 py-2.5 rounded-full font-medium transition-colors border border-emerald-200"
               >
-                {triggerStatus === 'loading' ? (
-                  <><RefreshCw className="w-4 h-4 animate-spin" /> กำลังสั่งรัน...</>
-                ) : triggerStatus === 'success' ? (
-                  <><CalendarCheck className="w-4 h-4" /> สั่งรันสำเร็จ!</>
-                ) : (
-                  <><RefreshCw className="w-4 h-4" /> สั่งบอทรัน (1 นาที)</>
-                )}
+                <RefreshCw className="w-4 h-4" /> สั่งบอทรัน (1 นาที)
               </button>
               <button 
                 onClick={clearData}
@@ -682,22 +593,10 @@ export default function Dashboard() {
               </button>
               <button 
                 onClick={triggerSyncData}
-                disabled={isSyncing || triggerStatus === 'success'}
-                className={`text-white px-6 py-3.5 rounded-xl font-semibold cursor-pointer transition-all shadow-md hover:-translate-y-0.5 flex items-center justify-center gap-2 ${
-                  triggerStatus === 'success'
-                    ? 'bg-green-600 hover:bg-green-500'
-                    : triggerStatus === 'error'
-                    ? 'bg-red-600 hover:bg-red-500'
-                    : 'bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-400'
-                }`}
+                disabled={isSyncing}
+                className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-400 text-white px-6 py-3.5 rounded-xl font-semibold cursor-pointer transition-all shadow-md hover:-translate-y-0.5 flex items-center justify-center gap-2"
               >
-                {triggerStatus === 'loading' ? (
-                  <><RefreshCw className="w-5 h-5 animate-spin" /> กำลังสั่งบอท...</>
-                ) : triggerStatus === 'success' ? (
-                  <><CalendarCheck className="w-5 h-5" /> สั่งรันสำเร็จ!</>
-                ) : (
-                  <><RefreshCw className="w-5 h-5" /> สั่งบอทอัปเดต (รอ 1 นาที)</>
-                )}
+                <RefreshCw className="w-5 h-5" /> สั่งบอทอัปเดต (รอ 1 นาที)
               </button>
             </div>
           </div>
@@ -1099,34 +998,6 @@ export default function Dashboard() {
           </div>
         )}
       </div>
-      {/* Loading Overlay */}
-      {(triggerStatus === 'loading' || triggerStatus === 'success') && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300">
-          <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full mx-4 flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
-            {triggerStatus === 'loading' ? (
-              <>
-                <div className="relative mb-6">
-                  <div className="absolute inset-0 border-4 border-indigo-100 rounded-full"></div>
-                  <div className="border-4 border-indigo-600 rounded-full w-16 h-16 border-t-transparent animate-spin"></div>
-                </div>
-                <h3 className="text-xl font-bold text-slate-800 mb-2">กำลังทำงานบน Cloud</h3>
-                <p className="text-sm text-slate-500 leading-relaxed">
-                  ระบบกำลังรันบอทเพื่อดึงข้อมูลล่าสุดจาก Empeo...<br />
-                  <span className="font-semibold text-indigo-600 mt-2 block">อาจใช้เวลาประมาณ 1-2 นาที โปรดรอสักครู่ ห้ามปิดหน้านี้</span>
-                </p>
-              </>
-            ) : (
-              <>
-                <div className="bg-emerald-100 p-4 rounded-full text-emerald-600 mb-6 animate-in scale-in duration-300">
-                  <CalendarCheck className="w-10 h-10" />
-                </div>
-                <h3 className="text-xl font-bold text-slate-800 mb-2">ดึงข้อมูลสำเร็จ!</h3>
-                <p className="text-sm text-slate-500">ข้อมูลอัปเดตเป็นปัจจุบันเรียบร้อยแล้ว</p>
-              </>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
