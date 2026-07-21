@@ -594,7 +594,7 @@ export default function Dashboard() {
                 >
                   <RefreshCw className="w-4 h-4" /> สั่งบอทรัน (1 นาที)
                 </button>
-              </div>>
+              </div>
               <button 
                 onClick={downloadExcel}
                 disabled={isSyncing}
@@ -662,7 +662,7 @@ export default function Dashboard() {
                 >
                   <RefreshCw className="w-5 h-5" /> สั่งบอทอัปเดต (รอ 1 นาที)
                 </button>
-              </div>>
+              </div>
               <button 
                 onClick={downloadExcel}
                 disabled={isSyncing}
