@@ -526,8 +526,8 @@ export default function Dashboard() {
   }, [dashboardData, startDate, endDate]);
 
   const getFilteredRecords = () => {
-    if (!dashboardData) return [];
-    return dashboardData.records.filter((row: any) => {
+    if (!displayData) return [];
+    return displayData.records.filter((row: any) => {
       const matchSearch = row.empName.toLowerCase().includes(searchTerm.toLowerCase()) || row.empId.includes(searchTerm);
       const matchDate = selectedDate === 'all' || row.date === selectedDate;
       

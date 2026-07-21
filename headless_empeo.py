@@ -75,12 +75,20 @@ def main():
         if start_date and end_date:
             print(f"กำลังตั้งค่าตัวกรองข้อมูลช่วงเวลา: {start_date} ถึง {end_date}")
             try:
-                # แปลง YYYY-MM-DD เป็น DD/MM/YYYY
+                # แปลง YYYY-MM-DD เป็น DD/MM/YYYY (ค.ศ. เป็น พ.ศ.)
                 sy, sm, sd = start_date.split('-')
                 ey, em, ed = end_date.split('-')
                 
-                date_from_str = f"{sd}/{sm}/{sy}"
-                date_to_str = f"{ed}/{em}/{ey}"
+                sy_int = int(sy)
+                if sy_int < 2500:
+                    sy_int += 543
+                
+                ey_int = int(ey)
+                if ey_int < 2500:
+                    ey_int += 543
+                
+                date_from_str = f"{sd}/{sm}/{sy_int}"
+                date_to_str = f"{ed}/{em}/{ey_int}"
                 
                 try:
                     date_to_input = wait.until(EC.presence_of_element_located((By.XPATH, "//input[@data-testid='input_dateForm_dateTo']")))
