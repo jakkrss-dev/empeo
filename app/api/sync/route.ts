@@ -3,7 +3,8 @@ import { NextResponse } from 'next/server';
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => ({}));
-    const targetMonth = body.targetMonth || '';
+    const startDate = body.startDate || '';
+    const endDate = body.endDate || '';
     
     const githubToken = process.env.GIST_GITHUB_TOKEN;
     
@@ -21,7 +22,7 @@ export async function POST(req: Request) {
       },
       body: JSON.stringify({ 
         event_type: "trigger-sync",
-        client_payload: { targetMonth }
+        client_payload: { startDate, endDate }
       })
     });
     

@@ -20,9 +20,11 @@ from selenium.webdriver.common.action_chains import ActionChains
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--month", type=str, default="", help="Target month in YYYY-MM format")
+    parser.add_argument("--start-date", type=str, default="", help="Start date in YYYY-MM-DD format")
+    parser.add_argument("--end-date", type=str, default="", help="End date in YYYY-MM-DD format")
     args = parser.parse_args()
-    target_month = args.month
+    start_date = args.start_date
+    end_date = args.end_date
 
     GITHUB_TOKEN = os.environ.get("GIST_GITHUB_TOKEN")
     if not GITHUB_TOKEN:
@@ -70,17 +72,15 @@ def main():
         driver.get("https://app.empeo.com/report/C009")
         time.sleep(8) 
         
-        if target_month:
-            print(f"กำลังตั้งค่าตัวกรองข้อมูล 'เดือน': {target_month}")
+        if start_date and end_date:
+            print(f"กำลังตั้งค่าตัวกรองข้อมูลช่วงเวลา: {start_date} ถึง {end_date}")
             try:
-                year_str, month_str = target_month.split('-')
-                year = int(year_str)
-                month = int(month_str)
-                last_day = calendar.monthrange(year, month)[1]
+                # แปลง YYYY-MM-DD เป็น DD/MM/YYYY
+                sy, sm, sd = start_date.split('-')
+                ey, em, ed = end_date.split('-')
                 
-                # กำหนดรูปแบบวันที่เป็น DD/MM/YYYY (หรือปรับตามที่ระบบ Empeo ต้องการ)
-                date_from_str = f"01/{month:02d}/{year}"
-                date_to_str = f"{last_day:02d}/{month:02d}/{year}"
+                date_from_str = f"{sd}/{sm}/{sy}"
+                date_to_str = f"{ed}/{em}/{ey}"
                 
                 try:
                     date_to_input = wait.until(EC.presence_of_element_located((By.XPATH, "//input[@data-testid='input_dateForm_dateTo']")))
@@ -99,13 +99,13 @@ def main():
                     save_btn = driver.find_element(By.XPATH, "//button[contains(normalize-space(), 'บันทึก')]")
                     driver.execute_script("arguments[0].click();", save_btn)
                     time.sleep(1)
-                    print(f"ตั้งค่าช่วงเวลา: {date_from_str} - {date_to_str}")
+                    print(f"ตั้งค่าช่วงเวลาสำเร็จ: {date_from_str} - {date_to_str}")
                 except Exception as e:
-                    print(f"ไม่พบช่อง Date To หรือเกิดข้อผิดพลาด: {e}")
+                    print(f"ไม่พบช่องเลือกช่วงเวลา หรือเกิดข้อผิดพลาด: {e}")
                     
                 time.sleep(1)
             except Exception as e:
-                print(f"รูปแบบ target_month ไม่ถูกต้อง หรือเกิดข้อผิดพลาดในการคำนวณวันที่: {e}")
+                print(f"รูปแบบวันที่ไม่ถูกต้อง หรือเกิดข้อผิดพลาดในการคำนวณวันที่: {e}")
         
         print("กำลังตั้งค่าตัวกรองข้อมูล 'สังกัด'...")
         try:

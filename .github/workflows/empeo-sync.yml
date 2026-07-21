@@ -6,8 +6,12 @@ on:
     - cron: '0 11 * * *'
   workflow_dispatch:
     inputs:
-      targetMonth:
-        description: 'Target month to fetch (YYYY-MM)'
+      startDate:
+        description: 'Start date (YYYY-MM-DD)'
+        required: false
+        default: ''
+      endDate:
+        description: 'End date (YYYY-MM-DD)'
         required: false
         default: ''
   repository_dispatch:
@@ -39,6 +43,7 @@ jobs:
       env:
         GIST_GITHUB_TOKEN: ${{ secrets.GIST_GITHUB_TOKEN }}
         NEXT_PUBLIC_GIST_ID: ${{ secrets.NEXT_PUBLIC_GIST_ID }}
-        TARGET_MONTH: ${{ github.event.client_payload.targetMonth || github.event.inputs.targetMonth || '' }}
+        START_DATE: ${{ github.event.client_payload.startDate || github.event.inputs.startDate || '' }}
+        END_DATE: ${{ github.event.client_payload.endDate || github.event.inputs.endDate || '' }}
       run: |
-        python headless_empeo.py --month "$TARGET_MONTH"
+        python headless_empeo.py --start-date "$START_DATE" --end-date "$END_DATE"

@@ -17,6 +17,8 @@ export default function Dashboard() {
   const [fileName, setFileName] = useState<string | null>(null);
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [syncStartDate, setSyncStartDate] = useState<string>('');
+  const [syncEndDate, setSyncEndDate] = useState<string>('');
   
     const [selectedEmpId, setSelectedEmpId] = useState<string>('');
   const [startDate, setStartDate] = useState<string>('');
@@ -24,7 +26,7 @@ export default function Dashboard() {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [selectedDate, setSelectedDate] = useState<string>('all');
-  const [syncTargetMonth, setSyncTargetMonth] = useState<string>('');
+
 
   useEffect(() => {
     setIsMounted(true);
@@ -377,7 +379,7 @@ export default function Dashboard() {
       const res = await fetch('/api/sync', { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ targetMonth: syncTargetMonth })
+        body: JSON.stringify({ startDate: syncStartDate, endDate: syncEndDate })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to trigger sync');
@@ -581,11 +583,19 @@ export default function Dashboard() {
               </button>
               <div className="flex items-center gap-2">
                 <input 
-                  type="month" 
-                  value={syncTargetMonth}
-                  onChange={(e) => setSyncTargetMonth(e.target.value)}
+                  type="date" 
+                  value={syncStartDate}
+                  onChange={(e) => setSyncStartDate(e.target.value)}
                   className="text-sm border border-emerald-200 rounded-full px-3 py-2.5 focus:ring-2 focus:ring-emerald-500 outline-none text-emerald-700 bg-emerald-50"
-                  title="เลือกเดือนที่จะดึงข้อมูล (เว้นว่างไว้เพื่อดึงเดือนปัจจุบัน)"
+                  title="วันที่เริ่มต้น"
+                />
+                <span className="text-emerald-700">-</span>
+                <input 
+                  type="date" 
+                  value={syncEndDate}
+                  onChange={(e) => setSyncEndDate(e.target.value)}
+                  className="text-sm border border-emerald-200 rounded-full px-3 py-2.5 focus:ring-2 focus:ring-emerald-500 outline-none text-emerald-700 bg-emerald-50"
+                  title="วันที่สิ้นสุด"
                 />
                 <button 
                   onClick={triggerSyncData}
@@ -648,13 +658,23 @@ export default function Dashboard() {
                 )}
               </button>
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 w-full sm:w-auto">
-                <input 
-                  type="month" 
-                  value={syncTargetMonth}
-                  onChange={(e) => setSyncTargetMonth(e.target.value)}
-                  className="border border-emerald-200 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-emerald-500 outline-none text-emerald-800 font-medium text-center shadow-sm w-full sm:w-auto"
-                  title="เลือกเดือนที่จะดึงข้อมูล (เว้นว่างไว้เพื่อดึงเดือนปัจจุบัน)"
-                />
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <input 
+                    type="date" 
+                    value={syncStartDate}
+                    onChange={(e) => setSyncStartDate(e.target.value)}
+                    className="border border-emerald-200 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-emerald-500 outline-none text-emerald-800 font-medium text-center shadow-sm w-full"
+                    title="วันที่เริ่มต้น"
+                  />
+                  <span className="text-emerald-700 font-bold">-</span>
+                  <input 
+                    type="date" 
+                    value={syncEndDate}
+                    onChange={(e) => setSyncEndDate(e.target.value)}
+                    className="border border-emerald-200 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-emerald-500 outline-none text-emerald-800 font-medium text-center shadow-sm w-full"
+                    title="วันที่สิ้นสุด"
+                  />
+                </div>
                 <button 
                   onClick={triggerSyncData}
                   disabled={isSyncing}
