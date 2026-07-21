@@ -84,12 +84,22 @@ def main():
                 
                 try:
                     date_to_input = wait.until(EC.presence_of_element_located((By.XPATH, "//input[@data-testid='input_dateForm_dateTo']")))
-                    driver.execute_script("arguments[0].value = '';", date_to_input) # clear
+                    driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", date_to_input)
+                    time.sleep(1)
+                    
+                    ActionChains(driver).move_to_element(date_to_input).click().perform()
+                    time.sleep(2)
+                    
+                    driver.execute_script("arguments[0].value = '';", date_to_input)
+                    date_to_input.send_keys(date_from_str)
                     time.sleep(0.5)
                     date_to_input.send_keys(date_to_str)
-                    date_to_input.send_keys(Keys.RETURN)
-                    driver.execute_script("arguments[0].dispatchEvent(new Event('input', { bubbles: true })); arguments[0].dispatchEvent(new Event('change', { bubbles: true })); arguments[0].dispatchEvent(new Event('blur', { bubbles: true }));", date_to_input)
-                    print(f"ตั้งค่า Date To: {date_to_str}")
+                    time.sleep(1)
+                    
+                    save_btn = driver.find_element(By.XPATH, "//button[contains(normalize-space(), 'บันทึก')]")
+                    driver.execute_script("arguments[0].click();", save_btn)
+                    time.sleep(1)
+                    print(f"ตั้งค่าช่วงเวลา: {date_from_str} - {date_to_str}")
                 except Exception as e:
                     print(f"ไม่พบช่อง Date To หรือเกิดข้อผิดพลาด: {e}")
                     
