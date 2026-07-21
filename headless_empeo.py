@@ -1,10 +1,13 @@
 import os
 import glob
 import time
+import calendar
+from datetime import datetime
 import base64
 import json
 import urllib.request
 import urllib.error
+import argparse
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -15,6 +18,11 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--month", type=str, default="", help="Target month in YYYY-MM format")
+    args = parser.parse_args()
+    target_month = args.month
+
     GITHUB_TOKEN = os.environ.get("GIST_GITHUB_TOKEN")
     if not GITHUB_TOKEN:
         print("Missing GIST_GITHUB_TOKEN environment variable")
@@ -60,6 +68,36 @@ def main():
         print("กำลังไปยังหน้ารายงาน C009...")
         driver.get("https://app.empeo.com/report/C009")
         time.sleep(8) 
+        
+        if target_month:
+            print(f"กำลังตั้งค่าตัวกรองข้อมูล 'เดือน': {target_month}")
+            try:
+                year_str, month_str = target_month.split('-')
+                year = int(year_str)
+                month = int(month_str)
+                last_day = calendar.monthrange(year, month)[1]
+                
+                # กำหนดรูปแบบวันที่เป็น DD/MM/YYYY (หรือปรับตามที่ระบบ Empeo ต้องการ)
+                date_from_str = f"01/{month:02d}/{year}"
+                date_to_str = f"{last_day:02d}/{month:02d}/{year}"
+                
+                try:
+                    date_from_input = wait.until(EC.presence_of_element_located((By.XPATH, "//input[@data-testid='input_dateForm_dateFrom']")))
+                    driver.execute_script("arguments[0].value = arguments[1]; arguments[0].dispatchEvent(new Event('input', { bubbles: true })); arguments[0].dispatchEvent(new Event('change', { bubbles: true }));", date_from_input, date_from_str)
+                    print(f"ตั้งค่า Date From: {date_from_str}")
+                except Exception as e:
+                    print(f"ไม่พบช่อง Date From หรือเกิดข้อผิดพลาด: {e}")
+
+                try:
+                    date_to_input = wait.until(EC.presence_of_element_located((By.XPATH, "//input[@data-testid='input_dateForm_dateTo']")))
+                    driver.execute_script("arguments[0].value = arguments[1]; arguments[0].dispatchEvent(new Event('input', { bubbles: true })); arguments[0].dispatchEvent(new Event('change', { bubbles: true }));", date_to_input, date_to_str)
+                    print(f"ตั้งค่า Date To: {date_to_str}")
+                except Exception as e:
+                    print(f"ไม่พบช่อง Date To หรือเกิดข้อผิดพลาด: {e}")
+                    
+                time.sleep(1)
+            except Exception as e:
+                print(f"รูปแบบ target_month ไม่ถูกต้อง หรือเกิดข้อผิดพลาดในการคำนวณวันที่: {e}")
         
         print("กำลังตั้งค่าตัวกรองข้อมูล 'สังกัด'...")
         try:

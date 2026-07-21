@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
+    const body = await req.json().catch(() => ({}));
+    const targetMonth = body.targetMonth || '';
+    
     const githubToken = process.env.GIST_GITHUB_TOKEN;
     
     if (!githubToken) {
@@ -16,7 +19,10 @@ export async function POST() {
         Accept: "application/vnd.github.v3+json",
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ event_type: "trigger-sync" })
+      body: JSON.stringify({ 
+        event_type: "trigger-sync",
+        client_payload: { targetMonth }
+      })
     });
     
     if (!res.ok) {

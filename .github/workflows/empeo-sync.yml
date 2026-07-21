@@ -5,7 +5,11 @@ on:
     # Run every day at 11:00 UTC (18:00 ICT - Bangkok Time)
     - cron: '0 11 * * *'
   workflow_dispatch:
-    # Allows manual trigger from GitHub Actions UI or API
+    inputs:
+      targetMonth:
+        description: 'Target month to fetch (YYYY-MM)'
+        required: false
+        default: ''
   repository_dispatch:
     # Allows triggering from external API (Vercel Next.js)
     types: [trigger-sync]
@@ -35,5 +39,6 @@ jobs:
       env:
         GIST_GITHUB_TOKEN: ${{ secrets.GIST_GITHUB_TOKEN }}
         NEXT_PUBLIC_GIST_ID: ${{ secrets.NEXT_PUBLIC_GIST_ID }}
+        TARGET_MONTH: ${{ github.event.client_payload.targetMonth || github.event.inputs.targetMonth || '' }}
       run: |
-        python headless_empeo.py
+        python headless_empeo.py --month "$TARGET_MONTH"

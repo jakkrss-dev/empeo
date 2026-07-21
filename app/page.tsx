@@ -24,6 +24,7 @@ export default function Dashboard() {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [selectedDate, setSelectedDate] = useState<string>('all');
+  const [syncTargetMonth, setSyncTargetMonth] = useState<string>('');
 
   useEffect(() => {
     setIsMounted(true);
@@ -373,7 +374,11 @@ export default function Dashboard() {
   const triggerSyncData = async () => {
     try {
       setIsSyncing(true);
-      const res = await fetch('/api/sync', { method: 'POST' });
+      const res = await fetch('/api/sync', { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetMonth: syncTargetMonth })
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to trigger sync');
       alert(data.message + "\n(โปรดรอประมาณ 1 นาที แล้วค่อยกดปุ่ม 'ดึงข้อมูลล่าสุด' อีกครั้ง)");
@@ -574,13 +579,22 @@ export default function Dashboard() {
               >
                 <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} /> อัปเดตข้อมูลจาก Cloud
               </button>
-              <button 
-                onClick={triggerSyncData}
-                disabled={isSyncing}
-                className="flex items-center gap-2 text-sm bg-emerald-50 hover:bg-emerald-100 text-emerald-600 px-4 py-2.5 rounded-full font-medium transition-colors border border-emerald-200"
-              >
-                <RefreshCw className="w-4 h-4" /> สั่งบอทรัน (1 นาที)
-              </button>
+              <div className="flex items-center gap-2">
+                <input 
+                  type="month" 
+                  value={syncTargetMonth}
+                  onChange={(e) => setSyncTargetMonth(e.target.value)}
+                  className="text-sm border border-emerald-200 rounded-full px-3 py-2.5 focus:ring-2 focus:ring-emerald-500 outline-none text-emerald-700 bg-emerald-50"
+                  title="เลือกเดือนที่จะดึงข้อมูล (เว้นว่างไว้เพื่อดึงเดือนปัจจุบัน)"
+                />
+                <button 
+                  onClick={triggerSyncData}
+                  disabled={isSyncing}
+                  className="flex items-center gap-2 text-sm bg-emerald-50 hover:bg-emerald-100 text-emerald-600 px-4 py-2.5 rounded-full font-medium transition-colors border border-emerald-200"
+                >
+                  <RefreshCw className="w-4 h-4" /> สั่งบอทรัน (1 นาที)
+                </button>
+              </div>>
               <button 
                 onClick={downloadExcel}
                 disabled={isSyncing}
@@ -633,13 +647,22 @@ export default function Dashboard() {
                   <><RefreshCw className="w-5 h-5" /> อัปเดตข้อมูลจาก Cloud</>
                 )}
               </button>
-              <button 
-                onClick={triggerSyncData}
-                disabled={isSyncing}
-                className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-400 text-white px-6 py-3.5 rounded-xl font-semibold cursor-pointer transition-all shadow-md hover:-translate-y-0.5 flex items-center justify-center gap-2"
-              >
-                <RefreshCw className="w-5 h-5" /> สั่งบอทอัปเดต (รอ 1 นาที)
-              </button>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 w-full sm:w-auto">
+                <input 
+                  type="month" 
+                  value={syncTargetMonth}
+                  onChange={(e) => setSyncTargetMonth(e.target.value)}
+                  className="border border-emerald-200 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-emerald-500 outline-none text-emerald-800 font-medium text-center shadow-sm w-full sm:w-auto"
+                  title="เลือกเดือนที่จะดึงข้อมูล (เว้นว่างไว้เพื่อดึงเดือนปัจจุบัน)"
+                />
+                <button 
+                  onClick={triggerSyncData}
+                  disabled={isSyncing}
+                  className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-400 text-white px-6 py-3.5 rounded-xl font-semibold cursor-pointer transition-all shadow-md hover:-translate-y-0.5 flex items-center justify-center gap-2 w-full sm:w-auto"
+                >
+                  <RefreshCw className="w-5 h-5" /> สั่งบอทอัปเดต (รอ 1 นาที)
+                </button>
+              </div>>
               <button 
                 onClick={downloadExcel}
                 disabled={isSyncing}
