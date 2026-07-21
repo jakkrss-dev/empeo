@@ -90,7 +90,11 @@ def main():
                     ActionChains(driver).move_to_element(date_to_input).click().perform()
                     time.sleep(2)
                     
-                    driver.execute_script("arguments[0].value = '';", date_to_input)
+                    from selenium.webdriver.common.keys import Keys
+                    date_to_input.send_keys(Keys.CONTROL + "a")
+                    date_to_input.send_keys(Keys.BACKSPACE)
+                    time.sleep(1)
+                    
                     date_to_input.send_keys(date_from_str)
                     time.sleep(0.5)
                     date_to_input.send_keys(date_to_str)
