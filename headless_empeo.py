@@ -13,6 +13,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
@@ -82,15 +83,12 @@ def main():
                 date_to_str = f"{last_day:02d}/{month:02d}/{year}"
                 
                 try:
-                    date_from_input = wait.until(EC.presence_of_element_located((By.XPATH, "//input[@data-testid='input_dateForm_dateFrom']")))
-                    driver.execute_script("arguments[0].value = arguments[1]; arguments[0].dispatchEvent(new Event('input', { bubbles: true })); arguments[0].dispatchEvent(new Event('change', { bubbles: true }));", date_from_input, date_from_str)
-                    print(f"ตั้งค่า Date From: {date_from_str}")
-                except Exception as e:
-                    print(f"ไม่พบช่อง Date From หรือเกิดข้อผิดพลาด: {e}")
-
-                try:
                     date_to_input = wait.until(EC.presence_of_element_located((By.XPATH, "//input[@data-testid='input_dateForm_dateTo']")))
-                    driver.execute_script("arguments[0].value = arguments[1]; arguments[0].dispatchEvent(new Event('input', { bubbles: true })); arguments[0].dispatchEvent(new Event('change', { bubbles: true }));", date_to_input, date_to_str)
+                    driver.execute_script("arguments[0].value = '';", date_to_input) # clear
+                    time.sleep(0.5)
+                    date_to_input.send_keys(date_to_str)
+                    date_to_input.send_keys(Keys.RETURN)
+                    driver.execute_script("arguments[0].dispatchEvent(new Event('input', { bubbles: true })); arguments[0].dispatchEvent(new Event('change', { bubbles: true })); arguments[0].dispatchEvent(new Event('blur', { bubbles: true }));", date_to_input)
                     print(f"ตั้งค่า Date To: {date_to_str}")
                 except Exception as e:
                     print(f"ไม่พบช่อง Date To หรือเกิดข้อผิดพลาด: {e}")
