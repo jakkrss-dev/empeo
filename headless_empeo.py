@@ -43,6 +43,12 @@ def main():
     options.add_argument("--window-size=1920,1080")
     
     download_dir = os.path.join(os.getcwd(), "downloads")
+    if os.path.exists(download_dir):
+        for f in glob.glob(os.path.join(download_dir, "*")):
+            try:
+                os.remove(f)
+            except:
+                pass
     os.makedirs(download_dir, exist_ok=True)
     
     prefs = {
@@ -186,15 +192,14 @@ def main():
     print("กำลังค้นหาไฟล์ Excel ล่าสุดในโฟลเดอร์ downloads...")
     excel_files = glob.glob(os.path.join(download_dir, "Attendance_Report_*.xlsx"))
     if not excel_files:
-        print("ไม่พบไฟล์ Excel!")
-        exit(1)
-        
-    latest_file = max(excel_files, key=os.path.getmtime)
-    print(f"พบไฟล์: {os.path.basename(latest_file)}")
-    
-    print("กำลังอัปโหลดขึ้น GitHub Gist...")
-    with open(latest_file, "rb") as f:
-        b64_content = base64.b64encode(f.read()).decode("utf-8")
+        print("ไม่พบไฟล์ Excel! อาจไม่มีข้อมูลในช่วงเวลานี้")
+        b64_content = "NO_DATA"
+    else:
+        latest_file = max(excel_files, key=os.path.getmtime)
+        print(f"พบไฟล์: {os.path.basename(latest_file)}")
+        print("กำลังอัปโหลดขึ้น GitHub Gist...")
+        with open(latest_file, "rb") as f:
+            b64_content = base64.b64encode(f.read()).decode("utf-8")
         
     url = f"https://api.github.com/gists/{GIST_ID}"
     headers = {

@@ -355,6 +355,12 @@ export default function Dashboard() {
       const data = await res.json();
       const b64Data = data.files['data.b64'].content;
       
+      if (b64Data === "NO_DATA") {
+        alert("ไม่พบข้อมูลพนักงานสำหรับช่วงเวลาที่คุณเลือก (อาจเป็นช่วงเวลาที่ไม่มีข้อมูลในระบบ Empeo หรือเลือกช่วงเวลาในอนาคต)");
+        setIsSyncing(false);
+        return;
+      }
+      
       const byteStr = atob(b64Data);
       const byteNumbers = new Array(byteStr.length);
       for (let i = 0; i < byteStr.length; i++) {
@@ -402,6 +408,12 @@ export default function Dashboard() {
         throw new Error('ไม่พบไฟล์ข้อมูลในระบบ');
       }
       const b64Data = data.files['data.b64'].content;
+      
+      if (b64Data === "NO_DATA") {
+        alert("ไม่สามารถดาวน์โหลดได้เนื่องจากไม่มีข้อมูลสำหรับช่วงเวลานี้ (บอทรายงานว่าไม่มีข้อมูล)");
+        setIsSyncing(false);
+        return;
+      }
       
       const byteStr = atob(b64Data);
       const byteNumbers = new Array(byteStr.length);
