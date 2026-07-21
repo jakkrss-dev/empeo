@@ -445,7 +445,11 @@ export default function Dashboard() {
     if (parts.length === 3) {
       const d = parseInt(parts[0], 10);
       const m = parseInt(parts[1], 10);
-      const y = parseInt(parts[2], 10);
+      let y = parseInt(parts[2], 10);
+      // Convert Buddhist year (BE) to Gregorian year
+      if (y > 2500) {
+        y -= 543;
+      }
       return new Date(y, m - 1, d);
     }
     return null;
