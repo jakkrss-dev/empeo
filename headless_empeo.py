@@ -79,16 +79,8 @@ def main():
                 sy, sm, sd = start_date.split('-')
                 ey, em, ed = end_date.split('-')
                 
-                sy_int = int(sy)
-                if sy_int < 2500:
-                    sy_int += 543
-                
-                ey_int = int(ey)
-                if ey_int < 2500:
-                    ey_int += 543
-                
-                date_from_str = f"{sd}/{sm}/{sy_int}"
-                date_to_str = f"{ed}/{em}/{ey_int}"
+                date_from_str = f"{sd}/{sm}/{sy}"
+                date_to_str = f"{ed}/{em}/{ey}"
                 
                 try:
                     date_to_input = wait.until(EC.presence_of_element_located((By.XPATH, "//input[@data-testid='input_dateForm_dateTo']")))
