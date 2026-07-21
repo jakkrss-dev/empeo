@@ -382,6 +382,18 @@ export default function Dashboard() {
   const triggerSyncData = async () => {
     try {
       setIsSyncing(true);
+      
+      let oldUpdatedAt = "";
+      try {
+        const gistRes = await fetch('/api/gist', { cache: 'no-store' });
+        if (gistRes.ok) {
+            const gistData = await gistRes.json();
+            oldUpdatedAt = gistData.updated_at || "";
+        }
+      } catch (e) {
+        console.warn("Could not get initial gist time", e);
+      }
+
       const res = await fetch('/api/sync', { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -389,7 +401,34 @@ export default function Dashboard() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to trigger sync');
-      alert(data.message + "\n(โปรดรอประมาณ 1 นาที แล้วค่อยกดปุ่ม 'ดึงข้อมูลล่าสุด' อีกครั้ง)");
+      
+      let attempts = 0;
+      let botFinished = false;
+      const maxAttempts = 20; // 60 seconds
+      
+      while (attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        attempts++;
+        try {
+            const checkRes = await fetch('/api/gist', { cache: 'no-store' });
+            if (checkRes.ok) {
+                const checkData = await checkRes.json();
+                if (checkData.updated_at && checkData.updated_at !== oldUpdatedAt) {
+                    botFinished = true;
+                    break;
+                }
+            }
+        } catch (e) {
+            // ignore
+        }
+      }
+      
+      if (botFinished) {
+         await syncData(); // Auto sync and it will show success alert
+      } else {
+         alert("บอททำงานนานกว่าปกติ หรือเกิดข้อผิดพลาด กรุณาลองดึงข้อมูลด้วยตัวเองอีกครั้ง");
+      }
+      
     } catch (error: any) {
       alert("เกิดข้อผิดพลาดในการสั่งบอท: " + error.message);
     } finally {
