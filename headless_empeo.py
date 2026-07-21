@@ -72,11 +72,11 @@ def main():
         driver.find_element(By.ID, "byEmail").click()
         
         print("รอเข้าสู่ระบบ...")
-        time.sleep(8)
+        time.sleep(3)
         
         print("กำลังไปยังหน้ารายงาน C009...")
         driver.get("https://app.empeo.com/report/C009")
-        time.sleep(8) 
+        time.sleep(2) 
         
         if start_date and end_date:
             print(f"กำลังตั้งค่าตัวกรองข้อมูลช่วงเวลา: {start_date} ถึง {end_date}")
@@ -91,20 +91,20 @@ def main():
                 try:
                     date_to_input = wait.until(EC.presence_of_element_located((By.XPATH, "//input[@data-testid='input_dateForm_dateTo']")))
                     driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", date_to_input)
-                    time.sleep(1)
+                    time.sleep(0.5)
                     
                     ActionChains(driver).move_to_element(date_to_input).click().perform()
-                    time.sleep(2)
+                    time.sleep(1)
                     
                     from selenium.webdriver.common.keys import Keys
                     date_to_input.send_keys(Keys.CONTROL + "a")
                     date_to_input.send_keys(Keys.BACKSPACE)
-                    time.sleep(1)
+                    time.sleep(0.5)
                     
                     date_to_input.send_keys(date_from_str)
                     time.sleep(0.5)
                     date_to_input.send_keys(date_to_str)
-                    time.sleep(1)
+                    time.sleep(0.5)
                     
                     save_btn = driver.find_element(By.XPATH, "//button[contains(normalize-space(), 'บันทึก')]")
                     driver.execute_script("arguments[0].click();", save_btn)
@@ -113,7 +113,6 @@ def main():
                 except Exception as e:
                     print(f"ไม่พบช่องเลือกช่วงเวลา หรือเกิดข้อผิดพลาด: {e}")
                     
-                time.sleep(1)
             except Exception as e:
                 print(f"รูปแบบวันที่ไม่ถูกต้อง หรือเกิดข้อผิดพลาดในการคำนวณวันที่: {e}")
         
@@ -121,12 +120,12 @@ def main():
         try:
             org_dropdown = wait.until(EC.presence_of_element_located((By.XPATH, "//go5-dropdown-tree-multi[@data-testid='input_dropdown_org']")))
             driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", org_dropdown)
-            time.sleep(1)
+            time.sleep(0.5)
             try:
                 ActionChains(driver).move_to_element(org_dropdown).click().perform()
             except:
                 driver.execute_script("arguments[0].click();", org_dropdown)
-            time.sleep(3)
+            time.sleep(1.5)
         except Exception as e:
             print(f"หาปุ่มเปิด Dropdown สังกัดไม่พบ: {e}")
             
@@ -156,21 +155,20 @@ def main():
         except Exception as e:
             print("เกิดข้อผิดพลาดในการค้นหาตัวเลือกสังกัด")
 
-        time.sleep(2)
         print("กำลังกดปุ่มแสดง...")
         try:
-            time.sleep(3)
+            time.sleep(1)
             try:
                 show_btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@data-testid='button_submit_button_button_show']")))
             except:
                 show_btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(normalize-space(), 'แสดง')]")))
             driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", show_btn)
-            time.sleep(1)
+            time.sleep(0.5)
             try:
                 show_btn.click()
             except:
                 driver.execute_script("arguments[0].click();", show_btn)
-            time.sleep(8)
+            time.sleep(4)
         except Exception as e:
             print(f"เกิดข้อผิดพลาดในการกดปุ่ม 'แสดง': {e}")
             raise e
@@ -179,8 +177,14 @@ def main():
         dl_btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@data-testid='button_button_download']")))
         driver.execute_script("arguments[0].click();", dl_btn)
         
-        print("รอไฟล์ดาวน์โหลด 15 วินาที...")
-        time.sleep(15)
+        print("รอไฟล์ดาวน์โหลด...")
+        for _ in range(30): # wait up to 15 seconds (30 * 0.5)
+            if glob.glob(os.path.join(download_dir, "Attendance_Report_*.xlsx")):
+                print("ดาวน์โหลดไฟล์เสร็จสมบูรณ์")
+                time.sleep(1) # wait a little bit more to ensure file is completely written
+                break
+            time.sleep(0.5)
+
         
     except Exception as e:
         print(f"\nพบปัญหา: {e}")
