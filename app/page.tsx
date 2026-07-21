@@ -655,9 +655,13 @@ export default function Dashboard() {
                 <button 
                   onClick={triggerSyncData}
                   disabled={isSyncing}
-                  className="flex items-center gap-2 text-sm bg-emerald-50 hover:bg-emerald-100 text-emerald-600 px-4 py-2.5 rounded-full font-medium transition-colors border border-emerald-200"
+                  className="flex items-center gap-2 text-sm bg-emerald-50 hover:bg-emerald-100 text-emerald-600 px-4 py-2.5 rounded-full font-medium transition-colors border border-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <RefreshCw className="w-4 h-4" /> สั่งบอทรัน (1 นาที)
+                  {isSyncing ? (
+                    <><RefreshCw className="w-4 h-4 animate-spin" /> กำลังทำงาน...</>
+                  ) : (
+                    <><RefreshCw className="w-4 h-4" /> สั่งบอทรัน</>
+                  )}
                 </button>
               </div>
               <button 
@@ -733,9 +737,13 @@ export default function Dashboard() {
                 <button 
                   onClick={triggerSyncData}
                   disabled={isSyncing}
-                  className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-400 text-white px-6 py-3.5 rounded-xl font-semibold cursor-pointer transition-all shadow-md hover:-translate-y-0.5 flex items-center justify-center gap-2 w-full sm:w-auto"
+                  className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-400 text-white px-6 py-3.5 rounded-xl font-semibold cursor-pointer transition-all shadow-md hover:-translate-y-0.5 flex items-center justify-center gap-2 w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <RefreshCw className="w-5 h-5" /> สั่งบอทอัปเดต (รอ 1 นาที)
+                  {isSyncing ? (
+                    <><RefreshCw className="w-5 h-5 animate-spin" /> กำลังรันบอท...</>
+                  ) : (
+                    <><RefreshCw className="w-5 h-5" /> สั่งบอทอัปเดต</>
+                  )}
                 </button>
               </div>
               <button 
