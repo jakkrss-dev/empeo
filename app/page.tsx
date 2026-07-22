@@ -186,20 +186,21 @@ export default function Dashboard() {
                 // ตัดตัวเลข สัญลักษณ์ - / _ . ออกไป เอาแค่ข้อความ
                 const cleanDocStr = docStr.replace(/[0-9\-\_\/\.]/g, '').trim();
                 
-                const isMissedIn = tInStr === '' || tInStr === '-';
-                const isMissedOut = tOutStr === '' || tOutStr === '-';
+                // ถ้ามีเอกสาร จะไม่ถือว่าลืมสแกน
+                const isMissedIn = (tInStr === '' || tInStr === '-') && !hasLeaveDoc;
+                const isMissedOut = (tOutStr === '' || tOutStr === '-') && !hasLeaveDoc;
                 
                 // ดึง log เอกสารมาทั้งหมด ถ้ามีเอกสาร ถือว่าเป็นเคสพิเศษ (isAbsent) เสมอ
                 const isAbsent = hasLeaveDoc;
                 const absentReason = isAbsent ? cleanDocStr : '';
                 
                 // ถ้าเป็นวันหยุดและไม่มีการสแกนนิ้ว ให้ข้ามไปเลย ยกเว้นมีเอกสาร
-                if (statusStr.includes('วันหยุด') && isMissedIn && isMissedOut && !hasLeaveDoc) {
+                if (statusStr.includes('วันหยุด') && (tInStr === '' || tInStr === '-') && (tOutStr === '' || tOutStr === '-') && !hasLeaveDoc) {
                     continue;
                 }
                 
                 // ถ้ามีเอกสาร ถือว่าเวลาเข้าออกอิงตามเอกสาร ไม่ให้ขึ้นว่าลืมสแกน
-                const isIncomplete = (isMissedIn || isMissedOut) && !hasLeaveDoc;
+                const isIncomplete = isMissedIn || isMissedOut;
                 
                 let isLate = false;
                 if (tInStr && tInStr !== '-') {
