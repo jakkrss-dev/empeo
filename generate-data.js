@@ -4,7 +4,7 @@ const fs = require('fs');
 const workbook = XLSX.readFile('./public/data.xlsx');
 const sheetName = workbook.SheetNames[0];
 const worksheet = workbook.Sheets[sheetName];
-const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+const data = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false });
 
 const rawRecords = data.slice(6);
 
@@ -24,7 +24,7 @@ function excelDateToJSDate(serial) {
     const hours = Math.floor(total_seconds / (60 * 60));
     const minutes = Math.floor(total_seconds / 60) % 60;
     
-    return new Date(date_info.getFullYear(), date_info.getMonth(), date_info.getDate(), hours, minutes, seconds).toLocaleDateString('th-TH');
+    return new Date(date_info.getFullYear(), date_info.getMonth(), date_info.getDate(), hours, minutes, seconds).toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
 const cleanedData = rawRecords.filter(row => row[0]).map(row => {
