@@ -201,6 +201,7 @@ export default function Dashboard() {
                 const absentReason = isAbsent ? cleanDocStr : '';
                 
                 const isOffsite = isAbsent && (absentReason.includes('นอกสถานที่') || absentReason.includes('พบลูกค้า') || absentReason.includes('อบรม') || absentReason.includes('สัมมนา') || absentReason.includes('ทำงานที่บ้าน') || absentReason.includes('บริษัทในเครือ'));
+                const isCertified = isAbsent && absentReason.includes('รับรองเวลา');
 
                 // ถ้าเป็นวันหยุดและไม่มีการสแกนนิ้ว ให้ข้ามไปเลย ยกเว้นมีเอกสาร
                 if (statusStr.includes('วันหยุด') && (tInStr === '' || tInStr === '-') && (tOutStr === '' || tOutStr === '-') && !hasLeaveDoc) {
@@ -258,6 +259,7 @@ export default function Dashboard() {
                     isLate: isLate,
                     isAbsent: isAbsent,
                     isOffsite: isOffsite,
+                    isCertified: isCertified,
                     absentReason: absentReason,
                     diffMins: diffMins,
                     workHours: workHours,
@@ -574,6 +576,7 @@ export default function Dashboard() {
         incomplete: empRecs.filter((r: any) => r.isIncomplete).length,
         late: empRecs.filter((r: any) => r.isLate).length,
         offsite: empRecs.filter((r: any) => r.isOffsite).length,
+        certified: empRecs.filter((r: any) => r.isCertified).length,
         missedInCount,
         missedOutCount,
         totalWorkHoursText: totalWorkHoursText,
@@ -589,13 +592,15 @@ export default function Dashboard() {
 
     const incompleteCount = filteredRecords.filter((r: any) => r.isIncomplete).length;
     const offsiteCount = filteredRecords.filter((r: any) => r.isOffsite).length;
-    const leaveCount = filteredRecords.filter((r: any) => r.isAbsent && !r.isOffsite).length;
-    const completeCount = filteredRecords.length - incompleteCount - offsiteCount - leaveCount;
+    const certifiedCount = filteredRecords.filter((r: any) => r.isCertified).length;
+    const leaveCount = filteredRecords.filter((r: any) => r.isAbsent && !r.isOffsite && !r.isCertified).length;
+    const completeCount = filteredRecords.length - incompleteCount - offsiteCount - certifiedCount - leaveCount;
 
     const pieChartData = [
         { name: 'สแกนครบ', count: completeCount, color: '#10b981' }, 
         { name: 'ลืมสแกน', count: incompleteCount, color: '#ef4444' },
-        { name: 'ทำงานนอกสถานที่', count: offsiteCount, color: '#3b82f6' }
+        { name: 'ทำงานนอกสถานที่', count: offsiteCount, color: '#3b82f6' },
+        { name: 'รับรองเวลา', count: certifiedCount, color: '#8b5cf6' }
     ];
     if (leaveCount > 0) {
         pieChartData.push({ name: 'ลางาน/อื่นๆ', count: leaveCount, color: '#f59e0b' });
@@ -907,6 +912,7 @@ export default function Dashboard() {
                       <Legend verticalAlign="top" height={36} wrapperStyle={{ fontSize: '13px' }} />
                       <Bar dataKey="totalDays" name="วันทำงานทั้งหมด (วัน)" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                       <Bar dataKey="offsite" name="ทำงานนอกสถานที่ (ครั้ง)" fill="#10b981" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="certified" name="รับรองเวลา (ครั้ง)" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
                       <Bar dataKey="late" name="มาสาย (ครั้ง)" fill="#f97316" radius={[4, 4, 0, 0]} />
                       <Bar dataKey="incomplete" name="ลืมสแกน (ครั้ง)" fill="#ef4444" radius={[4, 4, 0, 0]} />
                     </BarChart>
