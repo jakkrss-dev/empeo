@@ -111,7 +111,7 @@ export default function Dashboard() {
         let currentDept = 'ไม่ระบุ';
         let currentEmpId = '';
         let currentEmpName = '';
-        let colIdx = { id: 1, name: 4, pos: 8, date: 9, in: 10, out: 11 };
+        let colIdx = { id: 1, name: 4, pos: 8, date: 9, in: 10, out: 11, doc: -1 };
 
         for (let r = 0; r < Math.min(rows.length, 30); r++) {
           const row = rows[r];
@@ -134,6 +134,10 @@ export default function Dashboard() {
             // ใน C009 เวลาเข้าอยู่ถัดจากวันที่ 2 คอลัมน์ และเวลาออกอยู่ถัดไป 3 คอลัมน์
             colIdx.in = colIdx.date + 2;
             colIdx.out = colIdx.date + 3;
+            
+            // หาคอลัมน์เลขเอกสาร (ถ้ามี)
+            const docColIdx = row.findIndex(c => String(c).includes('เลขเอกสาร') || String(c).includes('เลขที่เอกสาร'));
+            if (docColIdx > -1) colIdx.doc = docColIdx;
             
             break;
           }
@@ -175,8 +179,14 @@ export default function Dashboard() {
                 // ตรวจสอบสถานะ (วันหยุด, ขาดงาน, ปกติ) ซึ่งใน C009 จะอยู่ถัดจากวันที่ 4 คอลัมน์
                 const statusStr = String(row[colIdx.date + 4] || '').trim();
                 
-                const isLeave = statusStr.includes('ลา') && !statusStr.includes('ป่วย');
-                const isSickLeave = statusStr.includes('ป่วย');
+                // ตรวจสอบเลขเอกสาร
+                const docStr = colIdx.doc > -1 ? String(row[colIdx.doc] || '').trim() : '';
+                
+                // ใช้ค่าจากเลขเอกสารประกอบกับสถานะ
+                const combinedStr = statusStr + " " + docStr;
+                
+                const isLeave = combinedStr.includes('ลา') && !combinedStr.includes('ป่วย');
+                const isSickLeave = combinedStr.includes('ป่วย');
                 const isLeaveDay = isLeave || isSickLeave;
                 
                 // ถ้าเป็นวันหยุดและไม่มีการสแกนนิ้วเข้างาน ให้ข้ามไปเลย (ลบวันหยุดออก) ยกเว้นวันลา
