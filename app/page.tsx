@@ -175,13 +175,17 @@ export default function Dashboard() {
                 // ตรวจสอบสถานะ (วันหยุด, ขาดงาน, ปกติ) ซึ่งใน C009 จะอยู่ถัดจากวันที่ 4 คอลัมน์
                 const statusStr = String(row[colIdx.date + 4] || '').trim();
                 
-                // ถ้าเป็นวันหยุดและไม่มีการสแกนนิ้วเข้างาน ให้ข้ามไปเลย (ลบวันหยุดออก)
-                if (statusStr.includes('วันหยุด') && (tInStr === '' || tInStr === '-')) {
+                const isLeave = statusStr.includes('ลา') && !statusStr.includes('ป่วย');
+                const isSickLeave = statusStr.includes('ป่วย');
+                const isLeaveDay = isLeave || isSickLeave;
+                
+                // ถ้าเป็นวันหยุดและไม่มีการสแกนนิ้วเข้างาน ให้ข้ามไปเลย (ลบวันหยุดออก) ยกเว้นวันลา
+                if (statusStr.includes('วันหยุด') && (tInStr === '' || tInStr === '-') && !isLeaveDay) {
                     continue;
                 }
                 
-                const isMissedIn = tInStr === '' || tInStr === '-';
-                const isMissedOut = tOutStr === '' || tOutStr === '-';
+                const isMissedIn = (tInStr === '' || tInStr === '-') && !isLeaveDay;
+                const isMissedOut = (tOutStr === '' || tOutStr === '-') && !isLeaveDay;
                 const isIncomplete = isMissedIn || isMissedOut;
                 
                 let isLate = false;
@@ -229,6 +233,9 @@ export default function Dashboard() {
                     isMissedIn: isMissedIn,
                     isMissedOut: isMissedOut,
                     isLate: isLate,
+                    isLeave: isLeave,
+                    isSickLeave: isSickLeave,
+                    statusStr: statusStr,
                     diffMins: diffMins,
                     workHours: workHours,
                     workHoursText: workHoursText
@@ -285,6 +292,8 @@ export default function Dashboard() {
         totalDays: empRecs.length,
         incomplete: empRecs.filter((r: any) => r.isIncomplete).length,
         late: empRecs.filter((r: any) => r.isLate).length,
+        leave: empRecs.filter((r: any) => r.isLeave).length,
+        sickLeave: empRecs.filter((r: any) => r.isSickLeave).length,
         missedInCount,
         missedOutCount,
         totalWorkHoursText: totalWorkHoursText,
@@ -543,6 +552,8 @@ export default function Dashboard() {
         totalDays: empRecs.length,
         incomplete: empRecs.filter((r: any) => r.isIncomplete).length,
         late: empRecs.filter((r: any) => r.isLate).length,
+        leave: empRecs.filter((r: any) => r.isLeave).length,
+        sickLeave: empRecs.filter((r: any) => r.isSickLeave).length,
         missedInCount,
         missedOutCount,
         totalWorkHoursText: totalWorkHoursText,
@@ -584,14 +595,16 @@ export default function Dashboard() {
       
       let matchStatus = true;
       if (filterStatus === 'incomplete') matchStatus = row.isIncomplete;
-      if (filterStatus === 'complete') matchStatus = !row.isIncomplete;
+      if (filterStatus === 'complete') matchStatus = !row.isIncomplete && !row.isLeave && !row.isSickLeave;
       if (filterStatus === 'late') matchStatus = row.isLate;
+      if (filterStatus === 'leave') matchStatus = row.isLeave;
+      if (filterStatus === 'sickLeave') matchStatus = row.isSickLeave;
 
       return matchSearch && matchDate && matchStatus;
     });
   };
 
-  let empTotalDays = 0, empComplete = 0, empLateCount = 0, empIncomplete = 0;
+  let empTotalDays = 0, empComplete = 0, empLateCount = 0, empIncomplete = 0, empLeaveCount = 0, empSickLeaveCount = 0;
   let empChartData: any[] = [];
   
   if (displayData && selectedEmpId) {
@@ -599,7 +612,9 @@ export default function Dashboard() {
     empTotalDays = empRecords.length;
     empIncomplete = empRecords.filter((r: any) => r.isIncomplete).length;
     empLateCount = empRecords.filter((r: any) => r.isLate).length;
-    empComplete = empTotalDays - empIncomplete;
+    empLeaveCount = empRecords.filter((r: any) => r.isLeave).length;
+    empSickLeaveCount = empRecords.filter((r: any) => r.isSickLeave).length;
+    empComplete = empTotalDays - empIncomplete - empLeaveCount - empSickLeaveCount;
     
     // [แก้ไขจุดที่ 3] เรียงแกนเวลารายวันในกราฟเจาะลึกบุคคลจากเก่าไปใหม่ตามปฏิทินจริง
     empChartData = empRecords
@@ -610,18 +625,18 @@ export default function Dashboard() {
   if (!isMounted) return null;
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-12">
+    <div className="min-h-screen bg-[#f8fafc] font-sans text-slate-900 pb-12 selection:bg-indigo-100 selection:text-indigo-900">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b border-slate-200 px-8 py-5 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+      <div className="bg-white/70 backdrop-blur-xl shadow-sm border-b border-slate-200/50 px-8 py-5 sticky top-0 z-20 transition-all">
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-2.5 rounded-xl shadow-blue-200 shadow-lg">
-              <CalendarCheck className="text-white w-6 h-6" />
+            <div className="bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-3 rounded-2xl shadow-lg shadow-purple-200/50 text-white">
+              <CalendarCheck className="w-7 h-7" />
             </div>
             <div>
-              <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Empeo Attendance Dashboard</h1>
-              <p className="text-sm text-slate-500 font-medium flex items-center gap-2">
-                <UploadCloud className="w-4 h-4" /> 
+              <h1 className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-slate-800 to-slate-600 tracking-tight">Empeo Attendance Dashboard</h1>
+              <p className="text-sm text-slate-500 font-medium flex items-center gap-2 mt-0.5">
+                <UploadCloud className="w-4 h-4 text-indigo-400" /> 
                 {fileName || "ระบบวิเคราะห์ข้อมูลการเข้างาน"}
               </p>
             </div>
@@ -790,40 +805,44 @@ export default function Dashboard() {
 
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-4">
-              <div className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-slate-100 p-6 flex flex-col relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-5"><Users className="w-24 h-24" /></div>
+              <div className="bg-white rounded-3xl shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 border border-slate-100 p-6 flex flex-col relative overflow-hidden group">
+                <div className="absolute -top-4 -right-4 p-4 opacity-[0.03] group-hover:scale-110 group-hover:-rotate-12 transition-transform duration-500"><Users className="w-32 h-32" /></div>
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="bg-blue-100 p-2.5 rounded-lg text-blue-600"><Users className="w-5 h-5" /></div>
+                  <div className="bg-gradient-to-br from-blue-500 to-cyan-500 p-3 rounded-2xl text-white shadow-lg shadow-blue-200/50"><Users className="w-5 h-5" /></div>
                   <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">พนักงานทั้งหมด</p>
                 </div>
-                <h4 className="text-4xl font-extrabold text-slate-800">{displayData.totalEmployees} <span className="text-lg font-medium text-slate-500">คน</span></h4>
+                <h4 className="text-4xl font-black text-slate-800">{displayData.totalEmployees} <span className="text-lg font-bold text-slate-400">คน</span></h4>
+                <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-cyan-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
               </div>
 
-              <div className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-slate-100 p-6 flex flex-col relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-5"><Clock className="w-24 h-24" /></div>
+              <div className="bg-white rounded-3xl shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 border border-slate-100 p-6 flex flex-col relative overflow-hidden group">
+                <div className="absolute -top-4 -right-4 p-4 opacity-[0.03] group-hover:scale-110 group-hover:-rotate-12 transition-transform duration-500"><Clock className="w-32 h-32" /></div>
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="bg-indigo-100 p-2.5 rounded-lg text-indigo-600"><Clock className="w-5 h-5" /></div>
+                  <div className="bg-gradient-to-br from-indigo-500 to-purple-500 p-3 rounded-2xl text-white shadow-lg shadow-indigo-200/50"><Clock className="w-5 h-5" /></div>
                   <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">รายการบันทึกเวลา</p>
                 </div>
-                <h4 className="text-4xl font-extrabold text-slate-800">{displayData.totalRecords} <span className="text-lg font-medium text-slate-500">ครั้ง</span></h4>
+                <h4 className="text-4xl font-black text-slate-800">{displayData.totalRecords} <span className="text-lg font-bold text-slate-400">ครั้ง</span></h4>
+                <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-purple-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
               </div>
 
-              <div className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-slate-100 p-6 flex flex-col relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-5"><AlertCircle className="w-24 h-24" /></div>
+              <div className="bg-white rounded-3xl shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 border border-slate-100 p-6 flex flex-col relative overflow-hidden group">
+                <div className="absolute -top-4 -right-4 p-4 opacity-[0.03] group-hover:scale-110 group-hover:-rotate-12 transition-transform duration-500"><AlertCircle className="w-32 h-32 text-red-500" /></div>
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="bg-red-100 p-2.5 rounded-lg text-red-600"><AlertCircle className="w-5 h-5" /></div>
+                  <div className="bg-gradient-to-br from-red-500 to-rose-500 p-3 rounded-2xl text-white shadow-lg shadow-red-200/50"><AlertCircle className="w-5 h-5" /></div>
                   <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">ลืมสแกนเข้า/ออก</p>
                 </div>
-                <h4 className="text-4xl font-extrabold text-red-600">{displayData.incompleteScans} <span className="text-lg font-medium text-slate-500">ครั้ง</span></h4>
+                <h4 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-rose-600">{displayData.incompleteScans} <span className="text-lg font-bold text-rose-300">ครั้ง</span></h4>
+                <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 to-rose-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
               </div>
 
-              <div className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-slate-100 p-6 flex flex-col relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-5"><Briefcase className="w-24 h-24" /></div>
+              <div className="bg-white rounded-3xl shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 border border-slate-100 p-6 flex flex-col relative overflow-hidden group">
+                <div className="absolute -top-4 -right-4 p-4 opacity-[0.03] group-hover:scale-110 group-hover:-rotate-12 transition-transform duration-500"><Briefcase className="w-32 h-32" /></div>
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="bg-emerald-100 p-2.5 rounded-lg text-emerald-600"><Briefcase className="w-5 h-5" /></div>
+                  <div className="bg-gradient-to-br from-emerald-400 to-teal-500 p-3 rounded-2xl text-white shadow-lg shadow-emerald-200/50"><Briefcase className="w-5 h-5" /></div>
                   <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">จำนวนฝ่าย</p>
                 </div>
-                <h4 className="text-4xl font-extrabold text-slate-800">{displayData.totalDepts} <span className="text-lg font-medium text-slate-500">ฝ่าย</span></h4>
+                <h4 className="text-4xl font-black text-slate-800">{displayData.totalDepts} <span className="text-lg font-bold text-slate-400">ฝ่าย</span></h4>
+                <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-teal-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
               </div>
             </div>
 
@@ -869,6 +888,8 @@ export default function Dashboard() {
                       <Bar dataKey="totalDays" name="วันทำงานทั้งหมด (วัน)" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                       <Bar dataKey="late" name="มาสาย (ครั้ง)" fill="#f97316" radius={[4, 4, 0, 0]} />
                       <Bar dataKey="incomplete" name="ลืมสแกน (ครั้ง)" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="leave" name="ลากิจ (ครั้ง)" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="sickLeave" name="ลาป่วย (ครั้ง)" fill="#ec4899" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -929,7 +950,7 @@ export default function Dashboard() {
 
               {selectedEmpId ? (
                 <div className="animate-in fade-in zoom-in-95 duration-300">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-6">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-5 mb-6">
                     <div className="bg-slate-50 rounded-xl p-5 border border-slate-100 flex items-center gap-4">
                       <div className="bg-blue-100 p-3 rounded-full text-blue-600"><Calendar className="w-6 h-6" /></div>
                       <div>
@@ -959,6 +980,22 @@ export default function Dashboard() {
                       <div>
                         <p className="text-sm font-semibold text-slate-500">ลืมสแกน (เข้า/ออก)</p>
                         <p className="text-2xl font-bold text-red-600">{empIncomplete} <span className="text-sm font-medium text-slate-500">ครั้ง</span></p>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-50 rounded-xl p-5 border border-slate-100 flex items-center gap-4">
+                      <div className="bg-purple-100 p-3 rounded-full text-purple-600"><CalendarCheck className="w-6 h-6" /></div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-500">ลากิจ</p>
+                        <p className="text-2xl font-bold text-purple-600">{empLeaveCount} <span className="text-sm font-medium text-slate-500">ครั้ง</span></p>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-50 rounded-xl p-5 border border-slate-100 flex items-center gap-4">
+                      <div className="bg-pink-100 p-3 rounded-full text-pink-600"><AlertCircle className="w-6 h-6" /></div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-500">ลาป่วย</p>
+                        <p className="text-2xl font-bold text-pink-600">{empSickLeaveCount} <span className="text-sm font-medium text-slate-500">ครั้ง</span></p>
                       </div>
                     </div>
                   </div>
@@ -1017,6 +1054,8 @@ export default function Dashboard() {
                       <th className="px-6 py-4 text-center">ชั่วโมงทำงานรวม</th>
                       <th className="px-6 py-4 text-center">มาสาย</th>
                       <th className="px-6 py-4 text-center">ลืมสแกนนิ้ว</th>
+                      <th className="px-6 py-4 text-center">ลากิจ</th>
+                      <th className="px-6 py-4 text-center">ลาป่วย</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1036,6 +1075,16 @@ export default function Dashboard() {
                         <td className="px-6 py-3 text-center">
                           {emp.incomplete > 0 ? (
                             <span className="text-red-600 font-bold bg-red-50 px-2 py-1 rounded">{emp.incomplete}</span>
+                          ) : '-'}
+                        </td>
+                        <td className="px-6 py-3 text-center">
+                          {emp.leave > 0 ? (
+                            <span className="text-purple-600 font-bold bg-purple-50 px-2 py-1 rounded">{emp.leave}</span>
+                          ) : '-'}
+                        </td>
+                        <td className="px-6 py-3 text-center">
+                          {emp.sickLeave > 0 ? (
+                            <span className="text-pink-600 font-bold bg-pink-50 px-2 py-1 rounded">{emp.sickLeave}</span>
                           ) : '-'}
                         </td>
                       </tr>
@@ -1090,6 +1139,8 @@ export default function Dashboard() {
                       <option value="complete">สมบูรณ์ (ปกติ)</option>
                       <option value="late">มาสาย (&gt;08:30)</option>
                       <option value="incomplete">ลืมสแกน</option>
+                      <option value="leave">ลากิจ</option>
+                      <option value="sickLeave">ลาป่วย</option>
                     </select>
                   </div>
                 </div>
@@ -1123,7 +1174,15 @@ export default function Dashboard() {
                           {row.workHours > 0 ? row.workHoursText : '-'}
                         </td>
                         <td className="px-6 py-4 text-center">
-                          {row.isIncomplete ? (
+                          {row.isSickLeave ? (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-pink-100 text-pink-700 border border-pink-200">
+                              ลาป่วย
+                            </span>
+                          ) : row.isLeave ? (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700 border border-purple-200">
+                              ลากิจ
+                            </span>
+                          ) : row.isIncomplete ? (
                             <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200">
                               ลืมสแกน
                             </span>
