@@ -1147,7 +1147,7 @@ export default function Dashboard() {
                         <td className="px-6 py-4 text-center">
                           {row.isAbsent ? (
                             <span 
-                              className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700 border border-purple-200 max-w-[150px] truncate" 
+                              className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700 border border-purple-200" 
                               title={row.absentReason}
                             >
                               {row.absentReason}
