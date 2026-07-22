@@ -183,15 +183,18 @@ export default function Dashboard() {
                 const docStr = colIdx.doc > -1 ? String(row[colIdx.doc] || '').trim() : '';
                 const hasLeaveDoc = docStr !== '' && docStr !== '-';
                 
-                // ตัดตัวเลข สัญลักษณ์ - / _ ออกไป เอาแค่ข้อความ
-                const cleanDocStr = docStr.replace(/[0-9\-\_\/]/g, '').trim();
+                // ตัดตัวเลข สัญลักษณ์ - / _ . ออกไป เอาแค่ข้อความ
+                const cleanDocStr = docStr.replace(/[0-9\-\_\/\.]/g, '').trim();
                 
                 const isMissedIn = tInStr === '' || tInStr === '-';
                 const isMissedOut = tOutStr === '' || tOutStr === '-';
                 const hasScanned = !isMissedIn || !isMissedOut;
                 
-                // ถ้ามีเวลาเข้าหรือออก ไม่ให้แสดงว่าขาดงาน/ลา
-                const isAbsent = hasLeaveDoc && !hasScanned;
+                // ถ้ามีใบรับรองเวลา ให้แสดงเสมอแม้จะมีเวลาเข้าออก
+                const isCertify = cleanDocStr.includes('รับรอง');
+                
+                // ถือเป็นเคสเอกสาร (isAbsent) ถ้ามีเอกสาร และ (ไม่มีการสแกน หรือ เป็นใบรับรองเวลา)
+                const isAbsent = hasLeaveDoc && (!hasScanned || isCertify);
                 const absentReason = isAbsent ? cleanDocStr : '';
                 
                 // ถ้าเป็นวันหยุดและไม่มีการสแกนนิ้วเข้างาน ให้ข้ามไปเลย (ลบวันหยุดออก) ยกเว้นมีใบลาที่ถือเป็นการขาดงาน
@@ -1149,7 +1152,7 @@ export default function Dashboard() {
                               className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-pink-100 text-pink-700 border border-pink-200 max-w-[150px] truncate" 
                               title={row.absentReason}
                             >
-                              ขาดงาน: {row.absentReason}
+                              {row.absentReason.includes('รับรอง') ? row.absentReason : `ขาดงาน: ${row.absentReason}`}
                             </span>
                           ) : row.isIncomplete ? (
                             <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200">
