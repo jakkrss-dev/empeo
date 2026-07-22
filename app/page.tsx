@@ -111,7 +111,7 @@ export default function Dashboard() {
         let currentDept = 'ไม่ระบุ';
         let currentEmpId = '';
         let currentEmpName = '';
-        let colIdx = { id: 1, name: 4, pos: 8, date: 9, in: 10, out: 11 };
+        let colIdx = { id: 1, name: 4, pos: 8, date: 9, in: 10, out: 11, doc: -1 };
 
         for (let r = 0; r < Math.min(rows.length, 30); r++) {
           const row = rows[r];
@@ -134,6 +134,10 @@ export default function Dashboard() {
             // ใน C009 เวลาเข้าอยู่ถัดจากวันที่ 2 คอลัมน์ และเวลาออกอยู่ถัดไป 3 คอลัมน์
             colIdx.in = colIdx.date + 2;
             colIdx.out = colIdx.date + 3;
+            
+            // หาคอลัมน์เลขเอกสาร (ถ้ามี)
+            const docColIdx = row.findIndex(c => String(c).includes('เลขเอกสาร') || String(c).includes('เลขที่เอกสาร'));
+            if (docColIdx > -1) colIdx.doc = docColIdx;
             
             break;
           }
@@ -175,14 +179,22 @@ export default function Dashboard() {
                 // ตรวจสอบสถานะ (วันหยุด, ขาดงาน, ปกติ) ซึ่งใน C009 จะอยู่ถัดจากวันที่ 4 คอลัมน์
                 const statusStr = String(row[colIdx.date + 4] || '').trim();
                 
-                // ถ้าเป็นวันหยุดและไม่มีการสแกนนิ้วเข้างาน ให้ข้ามไปเลย (ลบวันหยุดออก)
-                if (statusStr.includes('วันหยุด') && (tInStr === '' || tInStr === '-')) {
+                // อ่านค่าเลขเอกสาร (ถ้ามี)
+                const docStr = colIdx.doc > -1 ? String(row[colIdx.doc] || '').trim() : '';
+                const hasLeaveDoc = docStr !== '' && docStr !== '-';
+                
+                // ถ้าเป็นวันหยุดและไม่มีการสแกนนิ้วเข้างาน ให้ข้ามไปเลย (ลบวันหยุดออก) ยกเว้นมีใบลา
+                if (statusStr.includes('วันหยุด') && (tInStr === '' || tInStr === '-') && !hasLeaveDoc) {
                     continue;
                 }
                 
                 const isMissedIn = tInStr === '' || tInStr === '-';
                 const isMissedOut = tOutStr === '' || tOutStr === '-';
-                const isIncomplete = isMissedIn || isMissedOut;
+                
+                const isAbsent = hasLeaveDoc;
+                const absentReason = hasLeaveDoc ? docStr : '';
+                
+                const isIncomplete = (isMissedIn || isMissedOut) && !isAbsent;
                 
                 let isLate = false;
                 if (tInStr && tInStr !== '-') {
@@ -229,6 +241,8 @@ export default function Dashboard() {
                     isMissedIn: isMissedIn,
                     isMissedOut: isMissedOut,
                     isLate: isLate,
+                    isAbsent: isAbsent,
+                    absentReason: absentReason,
                     diffMins: diffMins,
                     workHours: workHours,
                     workHoursText: workHoursText
@@ -584,8 +598,9 @@ export default function Dashboard() {
       
       let matchStatus = true;
       if (filterStatus === 'incomplete') matchStatus = row.isIncomplete;
-      if (filterStatus === 'complete') matchStatus = !row.isIncomplete;
+      if (filterStatus === 'complete') matchStatus = !row.isIncomplete && !row.isAbsent;
       if (filterStatus === 'late') matchStatus = row.isLate;
+      if (filterStatus === 'absent') matchStatus = row.isAbsent;
 
       return matchSearch && matchDate && matchStatus;
     });
@@ -1090,6 +1105,7 @@ export default function Dashboard() {
                       <option value="complete">สมบูรณ์ (ปกติ)</option>
                       <option value="late">มาสาย (&gt;08:30)</option>
                       <option value="incomplete">ลืมสแกน</option>
+                      <option value="absent">ขาดงาน (มีเลขเอกสาร)</option>
                     </select>
                   </div>
                 </div>
@@ -1123,7 +1139,14 @@ export default function Dashboard() {
                           {row.workHours > 0 ? row.workHoursText : '-'}
                         </td>
                         <td className="px-6 py-4 text-center">
-                          {row.isIncomplete ? (
+                          {row.isAbsent ? (
+                            <span 
+                              className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-pink-100 text-pink-700 border border-pink-200 max-w-[150px] truncate" 
+                              title={row.absentReason}
+                            >
+                              ขาดงาน: {row.absentReason}
+                            </span>
+                          ) : row.isIncomplete ? (
                             <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200">
                               ลืมสแกน
                             </span>
