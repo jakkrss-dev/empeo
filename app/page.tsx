@@ -188,27 +188,25 @@ export default function Dashboard() {
                 
                 const isMissedIn = tInStr === '' || tInStr === '-';
                 const isMissedOut = tOutStr === '' || tOutStr === '-';
-                const hasScanned = !isMissedIn || !isMissedOut;
                 
-                // ถ้ามีใบรับรองเวลา ให้แสดงเสมอแม้จะมีเวลาเข้าออก
-                const isCertify = cleanDocStr.includes('รับรอง');
-                
-                // ถือเป็นเคสเอกสาร (isAbsent) ถ้ามีเอกสาร และ (ไม่มีการสแกน หรือ เป็นใบรับรองเวลา)
-                const isAbsent = hasLeaveDoc && (!hasScanned || isCertify);
+                // ดึง log เอกสารมาทั้งหมด ถ้ามีเอกสาร ถือว่าเป็นเคสพิเศษ (isAbsent) เสมอ
+                const isAbsent = hasLeaveDoc;
                 const absentReason = isAbsent ? cleanDocStr : '';
                 
-                // ถ้าเป็นวันหยุดและไม่มีการสแกนนิ้วเข้างาน ให้ข้ามไปเลย (ลบวันหยุดออก) ยกเว้นมีใบลาที่ถือเป็นการขาดงาน
-                if (statusStr.includes('วันหยุด') && !hasScanned && !isAbsent) {
+                // ถ้าเป็นวันหยุดและไม่มีการสแกนนิ้ว ให้ข้ามไปเลย ยกเว้นมีเอกสาร
+                if (statusStr.includes('วันหยุด') && isMissedIn && isMissedOut && !hasLeaveDoc) {
                     continue;
                 }
                 
-                const isIncomplete = (isMissedIn || isMissedOut) && !isAbsent;
+                // ถ้ามีเอกสาร ถือว่าเวลาเข้าออกอิงตามเอกสาร ไม่ให้ขึ้นว่าลืมสแกน
+                const isIncomplete = (isMissedIn || isMissedOut) && !hasLeaveDoc;
                 
                 let isLate = false;
                 if (tInStr && tInStr !== '-') {
                     let formattedIn = tInStr;
                     if (formattedIn.length === 4) formattedIn = '0' + formattedIn; 
-                    if (formattedIn > '08:30') isLate = true;
+                    // ถ้ามีเอกสารอ้างอิง จะไม่ถือว่ามาสาย
+                    if (formattedIn > '08:30' && !hasLeaveDoc) isLate = true;
                 }
                 
                 let workHours = 0;
@@ -1149,10 +1147,10 @@ export default function Dashboard() {
                         <td className="px-6 py-4 text-center">
                           {row.isAbsent ? (
                             <span 
-                              className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-pink-100 text-pink-700 border border-pink-200 max-w-[150px] truncate" 
+                              className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700 border border-purple-200 max-w-[150px] truncate" 
                               title={row.absentReason}
                             >
-                              {row.absentReason.includes('รับรอง') ? row.absentReason : `ขาดงาน: ${row.absentReason}`}
+                              {row.absentReason}
                             </span>
                           ) : row.isIncomplete ? (
                             <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200">
