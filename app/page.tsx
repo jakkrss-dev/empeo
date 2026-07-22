@@ -183,16 +183,21 @@ export default function Dashboard() {
                 const docStr = colIdx.doc > -1 ? String(row[colIdx.doc] || '').trim() : '';
                 const hasLeaveDoc = docStr !== '' && docStr !== '-';
                 
-                // ถ้าเป็นวันหยุดและไม่มีการสแกนนิ้วเข้างาน ให้ข้ามไปเลย (ลบวันหยุดออก) ยกเว้นมีใบลา
-                if (statusStr.includes('วันหยุด') && (tInStr === '' || tInStr === '-') && !hasLeaveDoc) {
-                    continue;
-                }
+                // ตัดตัวเลข สัญลักษณ์ - / _ ออกไป เอาแค่ข้อความ
+                const cleanDocStr = docStr.replace(/[0-9\-\_\/]/g, '').trim();
                 
                 const isMissedIn = tInStr === '' || tInStr === '-';
                 const isMissedOut = tOutStr === '' || tOutStr === '-';
+                const hasScanned = !isMissedIn || !isMissedOut;
                 
-                const isAbsent = hasLeaveDoc;
-                const absentReason = hasLeaveDoc ? docStr : '';
+                // ถ้ามีเวลาเข้าหรือออก ไม่ให้แสดงว่าขาดงาน/ลา
+                const isAbsent = hasLeaveDoc && !hasScanned;
+                const absentReason = isAbsent ? cleanDocStr : '';
+                
+                // ถ้าเป็นวันหยุดและไม่มีการสแกนนิ้วเข้างาน ให้ข้ามไปเลย (ลบวันหยุดออก) ยกเว้นมีใบลาที่ถือเป็นการขาดงาน
+                if (statusStr.includes('วันหยุด') && !hasScanned && !isAbsent) {
+                    continue;
+                }
                 
                 const isIncomplete = (isMissedIn || isMissedOut) && !isAbsent;
                 
