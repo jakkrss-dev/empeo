@@ -173,8 +173,8 @@ export default function Dashboard() {
                 const timeIn = row[colIdx.in];
                 const timeOut = row[colIdx.out];
                 
-                const tInStr = timeIn ? String(timeIn).trim() : '';
-                const tOutStr = timeOut ? String(timeOut).trim() : '';
+                let tInStr = timeIn ? String(timeIn).trim() : '';
+                let tOutStr = timeOut ? String(timeOut).trim() : '';
                 
                 // ตรวจสอบสถานะ (วันหยุด, ขาดงาน, ปกติ) ซึ่งใน C009 จะอยู่ถัดจากวันที่ 4 คอลัมน์
                 const statusStr = String(row[colIdx.date + 4] || '').trim();
@@ -182,6 +182,12 @@ export default function Dashboard() {
                 // อ่านค่าเลขเอกสาร (ถ้ามี)
                 const docStr = colIdx.doc > -1 ? String(row[colIdx.doc] || '').trim() : '';
                 const hasLeaveDoc = docStr !== '' && docStr !== '-';
+                
+                // ถ้าเอกสารระบุว่า "ลาป่วย" ไม่ให้นับเวลาเข้า-ออก (เคลียร์ค่าทิ้ง)
+                if (docStr.includes('ลาป่วย')) {
+                    tInStr = '-';
+                    tOutStr = '-';
+                }
                 
                 // ตัดตัวเลข สัญลักษณ์ - / _ . ออกไป เอาแค่ข้อความ
                 const cleanDocStr = docStr.replace(/[0-9\-\_\/\.]/g, '').trim();
