@@ -200,6 +200,8 @@ export default function Dashboard() {
                 const isAbsent = hasLeaveDoc;
                 const absentReason = isAbsent ? cleanDocStr : '';
                 
+                const isOffsite = isAbsent && (absentReason.includes('นอกสถานที่') || absentReason.includes('พบลูกค้า') || absentReason.includes('อบรม') || absentReason.includes('สัมมนา') || absentReason.includes('ทำงานที่บ้าน') || absentReason.includes('บริษัทในเครือ'));
+
                 // ถ้าเป็นวันหยุดและไม่มีการสแกนนิ้ว ให้ข้ามไปเลย ยกเว้นมีเอกสาร
                 if (statusStr.includes('วันหยุด') && (tInStr === '' || tInStr === '-') && (tOutStr === '' || tOutStr === '-') && !hasLeaveDoc) {
                     continue;
@@ -255,6 +257,7 @@ export default function Dashboard() {
                     isMissedOut: isMissedOut,
                     isLate: isLate,
                     isAbsent: isAbsent,
+                    isOffsite: isOffsite,
                     absentReason: absentReason,
                     diffMins: diffMins,
                     workHours: workHours,
@@ -570,6 +573,7 @@ export default function Dashboard() {
         totalDays: empRecs.length,
         incomplete: empRecs.filter((r: any) => r.isIncomplete).length,
         late: empRecs.filter((r: any) => r.isLate).length,
+        offsite: empRecs.filter((r: any) => r.isOffsite).length,
         missedInCount,
         missedOutCount,
         totalWorkHoursText: totalWorkHoursText,
@@ -584,11 +588,18 @@ export default function Dashboard() {
     })).sort((a: any, b: any) => b.count - a.count);
 
     const incompleteCount = filteredRecords.filter((r: any) => r.isIncomplete).length;
-    const completeCount = filteredRecords.length - incompleteCount;
+    const offsiteCount = filteredRecords.filter((r: any) => r.isOffsite).length;
+    const leaveCount = filteredRecords.filter((r: any) => r.isAbsent && !r.isOffsite).length;
+    const completeCount = filteredRecords.length - incompleteCount - offsiteCount - leaveCount;
+
     const pieChartData = [
         { name: 'สแกนครบ', count: completeCount, color: '#10b981' }, 
-        { name: 'ลืมสแกน', count: incompleteCount, color: '#ef4444' } 
+        { name: 'ลืมสแกน', count: incompleteCount, color: '#ef4444' },
+        { name: 'ทำงานนอกสถานที่', count: offsiteCount, color: '#3b82f6' }
     ];
+    if (leaveCount > 0) {
+        pieChartData.push({ name: 'ลางาน/อื่นๆ', count: leaveCount, color: '#f59e0b' });
+    }
 
     return {
       ...dashboardData,
@@ -895,6 +906,7 @@ export default function Dashboard() {
                       <RechartsTooltip cursor={{fill: '#f8fafc'}} contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}} />
                       <Legend verticalAlign="top" height={36} wrapperStyle={{ fontSize: '13px' }} />
                       <Bar dataKey="totalDays" name="วันทำงานทั้งหมด (วัน)" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="offsite" name="ทำงานนอกสถานที่ (ครั้ง)" fill="#10b981" radius={[4, 4, 0, 0]} />
                       <Bar dataKey="late" name="มาสาย (ครั้ง)" fill="#f97316" radius={[4, 4, 0, 0]} />
                       <Bar dataKey="incomplete" name="ลืมสแกน (ครั้ง)" fill="#ef4444" radius={[4, 4, 0, 0]} />
                     </BarChart>
