@@ -85,8 +85,11 @@ def main():
                 sy, sm, sd = start_date.split('-')
                 ey, em, ed = end_date.split('-')
                 
-                date_from_str = f"{sd}/{sm}/{sy}"
-                date_to_str = f"{ed}/{em}/{ey}"
+                sy_be = str(int(sy) + 543)
+                ey_be = str(int(ey) + 543)
+                
+                date_from_str = f"{sd}/{sm}/{sy_be}"
+                date_to_str = f"{ed}/{em}/{ey_be}"
                 
                 try:
                     date_to_input = wait.until(EC.presence_of_element_located((By.XPATH, "//input[@data-testid='input_dateForm_dateTo']")))
@@ -122,10 +125,12 @@ def main():
             driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", org_dropdown)
             time.sleep(0.5)
             try:
-                ActionChains(driver).move_to_element(org_dropdown).click().perform()
-            except:
+                inner_clickable = org_dropdown.find_element(By.XPATH, ".//div[contains(@class, 'go5-form-field-content-template')]")
+                driver.execute_script("arguments[0].click();", inner_clickable)
+            except Exception as e:
+                print(f"หาปุ่มด้านในไม่พบ ลองกดตัวนอก: {e}")
                 driver.execute_script("arguments[0].click();", org_dropdown)
-            time.sleep(1.5)
+            time.sleep(3)
         except Exception as e:
             print(f"หาปุ่มเปิด Dropdown สังกัดไม่พบ: {e}")
             
@@ -178,7 +183,7 @@ def main():
         driver.execute_script("arguments[0].click();", dl_btn)
         
         print("รอไฟล์ดาวน์โหลด...")
-        for _ in range(30): # wait up to 15 seconds (30 * 0.5)
+        for _ in range(60): # wait up to 30 seconds (60 * 0.5)
             if glob.glob(os.path.join(download_dir, "Attendance_Report_*.xlsx")):
                 print("ดาวน์โหลดไฟล์เสร็จสมบูรณ์")
                 time.sleep(1) # wait a little bit more to ensure file is completely written

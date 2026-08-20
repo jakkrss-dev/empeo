@@ -6,10 +6,10 @@ export async function POST(req: Request) {
     const startDate = body.startDate || '';
     const endDate = body.endDate || '';
     
-    const githubToken = process.env.GIST_GITHUB_TOKEN;
+    const githubToken = process.env.GIST_GITHUB_TOKEN || process.env.GITHUB_TOKEN;
     
     if (!githubToken) {
-      return NextResponse.json({ error: 'ไม่พบ GIST_GITHUB_TOKEN ในระบบ Vercel' }, { status: 500 });
+      return NextResponse.json({ error: 'ไม่พบ GIST_GITHUB_TOKEN หรือ GITHUB_TOKEN ในระบบ' }, { status: 500 });
     }
     
     // สั่งปลุกบอทบน GitHub Actions

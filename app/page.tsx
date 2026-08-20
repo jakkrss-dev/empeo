@@ -412,6 +412,14 @@ export default function Dashboard() {
   };
 
   const triggerSyncData = async () => {
+    if (!syncStartDate || !syncEndDate) {
+      alert("กรุณาเลือกวันที่เริ่มต้นและวันที่สิ้นสุดก่อนสั่งบอทอัปเดต");
+      return;
+    }
+
+    // ล้างข้อมูลที่เคยดึงรอบก่อนให้หายไปเลย ตามที่ผู้ใช้ต้องการ
+    clearData();
+
     try {
       setIsSyncing(true);
       
@@ -436,7 +444,7 @@ export default function Dashboard() {
       
       let attempts = 0;
       let botFinished = false;
-      const maxAttempts = 20; // 60 seconds
+      const maxAttempts = 60; // 180 seconds
       
       while (attempts < maxAttempts) {
         await new Promise(resolve => setTimeout(resolve, 3000));
